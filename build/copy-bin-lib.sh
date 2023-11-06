@@ -3,12 +3,14 @@
 set -o pipefail
 set -o errexit
 set -o nounset
+set -ex
 
 FILE=${FILE:-"/etc/gpu-manager/volume.conf"}
-LIB_FILES=$(jq -r .volume[1].components.libraries[] ${FILE})
-BIN_FILES=$(jq -r .volume[1].components.binaries[] ${FILE})
+LIB_FILES=$(jq -r .volume[0].components.libraries[] ${FILE})
+BIN_FILES=$(jq -r .volume[0].components.binaries[] ${FILE})
 readonly NV_DIR="/usr/local/nvidia"
-readonly FIND_BASE=${FIND_BASE:-"/usr/local/host"}
+#readonly FIND_BASE=${FIND_BASE:-"/usr/local/host"}
+readonly FIND_BASE=${FIND_BASE:-"/usr"}  # 宿主机目录
 
 function check_arch() {
   local readonly lib=$1
