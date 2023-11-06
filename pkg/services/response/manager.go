@@ -92,23 +92,6 @@ func (m *responseManager) DeleteResp(podUID string, containerName string) {
 	}
 }
 
-func (m *responseManager) GetResp(podUID string, containerName string) *pluginapi.ContainerAllocateResponse {
-	m.l.Lock()
-	defer m.l.Unlock()
-
-	podData, ok := m.data[podUID]
-	if !ok {
-		return nil
-	}
-
-	resp, ok := podData[containerName]
-	if !ok {
-		return nil
-	}
-
-	return resp
-}
-
 func (m *responseManager) ListAll() map[string]containerResponseDataMapping {
 	m.l.Lock()
 	defer m.l.Unlock()
@@ -127,4 +110,21 @@ func (m *responseManager) ListAll() map[string]containerResponseDataMapping {
 	}
 
 	return snapshot
+}
+
+func (m *responseManager) GetResp(podUID string, containerName string) *pluginapi.ContainerAllocateResponse {
+	m.l.Lock()
+	defer m.l.Unlock()
+
+	podData, ok := m.data[podUID]
+	if !ok {
+		return nil
+	}
+
+	resp, ok := podData[containerName]
+	if !ok {
+		return nil
+	}
+
+	return resp
 }

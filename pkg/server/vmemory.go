@@ -89,7 +89,7 @@ func (vr *vmemoryResourceServer) Allocate(ctx context.Context, reqs *pluginapi.A
 	fakeData := make([]*pluginapi.ContainerAllocateResponse, 0)
 	fakeData = append(fakeData, &pluginapi.ContainerAllocateResponse{})
 
-	return &pluginapi.AllocateResponse{
+	return &pluginapi.AllocateResponse{ // ✈️
 		ContainerResponses: fakeData,
 	}, nil
 }

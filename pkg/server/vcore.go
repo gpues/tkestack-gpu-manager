@@ -87,7 +87,7 @@ func (vr *vcoreResourceServer) Run() error {
 /** device plugin interface */
 func (vr *vcoreResourceServer) Allocate(ctx context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	klog.V(2).Infof("%+v allocation request for vcore", reqs)
-	return vr.mgr.Allocate(ctx, reqs)
+	return vr.mgr.Allocate(ctx, reqs) // ✈️
 }
 
 func (vr *vcoreResourceServer) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {

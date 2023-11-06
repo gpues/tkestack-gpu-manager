@@ -139,7 +139,7 @@ const (
 	DEFAULT_DIR_MODE       = 0777
 )
 
-//VirtualManager manages vGPUs
+// VirtualManager manages vGPUs
 type VirtualManager struct {
 	sync.Mutex
 
@@ -151,7 +151,7 @@ type VirtualManager struct {
 
 var _ vcudaapi.VCUDAServiceServer = &VirtualManager{}
 
-//NewVirtualManager returns a new VirtualManager.
+// NewVirtualManager returns a new VirtualManager.
 func NewVirtualManager(config *config.Config,
 	runtimeManager runtime.ContainerRuntimeInterface,
 	responseManager response.Manager) *VirtualManager {
@@ -165,8 +165,8 @@ func NewVirtualManager(config *config.Config,
 	return manager
 }
 
-//NewVirtualManagerForTest returns a new VirtualManager with fake docker
-//client for testing.
+// NewVirtualManagerForTest returns a new VirtualManager with fake docker
+// client for testing.
 func NewVirtualManagerForTest(config *config.Config,
 	runtimeManager runtime.ContainerRuntimeInterface,
 	responseManager response.Manager) *VirtualManager {
@@ -180,12 +180,12 @@ func NewVirtualManagerForTest(config *config.Config,
 	return manager
 }
 
-//Run starts a VirtualManager
+// Run starts a VirtualManager
 func (vm *VirtualManager) Run() {
 	if len(vm.cfg.VirtualManagerPath) == 0 {
 		klog.Fatalf("Please set virtual manager path")
 	}
-
+	// /etc/gpu-manager/vm
 	if err := os.MkdirAll(vm.cfg.VirtualManagerPath, DEFAULT_DIR_MODE); err != nil && !os.IsNotExist(err) {
 		klog.Fatalf("can't create %s, error %s", vm.cfg.VirtualManagerPath, err)
 	}
@@ -293,44 +293,46 @@ func (vm *VirtualManager) garbageCollector() {
 	}, time.Minute)
 }
 
-//                Host                     |                Container
-//                                         |
-//                                         |
-//  .-----------.                          |
-//  | allocator |----------.               |             ___________
-//  '-----------'   PodUID |               |             \          \
-//                         v               |              ) User App )--------.
-//                .-----------------.      |             /__________/         |
-//     .----------| virtual-manager |      |                                  |
-//     |          '-----------------'      |                                  |
+//	              Host                     |                Container
+//	                                       |
+//	                                       |
+//	.-----------.                          |
+//	| allocator |----------.               |             ___________
+//	'-----------'   PodUID |               |             \          \
+//	                       v               |              ) User App )--------.
+//	              .-----------------.      |             /__________/         |
+//	   .----------| virtual-manager |      |                                  |
+//	   |          '-----------------'      |                                  |
+//
 // $VirtualManagerPath/PodUID              |                                  |
-//     |                                   |       read /proc/self/cgroup     |
-//     |  .------------------.             |       to get PodUID, ContainerID |
-//     '->| create directory |------.      |                                  |
-//        '------------------'      |      |                                  |
-//                                  |      |                                  |
-//                 .----------------'      |       .----------------------.   |
-//                 |                       |       | fork call gpu-client |<--'
-//                 |                       |       '----------------------'
-//                 v                       |                   |
-//    .------------------------.           |                   |
-//   ( wait for client register )<-------PodUID, ContainerID---'
-//    '------------------------'           |
-//                 |                       |
-//                 v                       |
-//   .--------------------------.          |
-//   | locate pod and container |          |
-//   '--------------------------'          |
-//                 |                       |
-//                 v                       |
-//   .---------------------------.         |
-//   | write down configure and  |         |
-//   | pid file with containerID |         |
-//   | as name                   |         |
-//   '---------------------------'         |
-//                                         |
-//                                         |
-//                                         v
+//
+//	  |                                   |       read /proc/self/cgroup     |
+//	  |  .------------------.             |       to get PodUID, ContainerID |
+//	  '->| create directory |------.      |                                  |
+//	     '------------------'      |      |                                  |
+//	                               |      |                                  |
+//	              .----------------'      |       .----------------------.   |
+//	              |                       |       | fork call gpu-client |<--'
+//	              |                       |       '----------------------'
+//	              v                       |                   |
+//	 .------------------------.           |                   |
+//	( wait for client register )<-------PodUID, ContainerID---'
+//	 '------------------------'           |
+//	              |                       |
+//	              v                       |
+//	.--------------------------.          |
+//	| locate pod and container |          |
+//	'--------------------------'          |
+//	              |                       |
+//	              v                       |
+//	.---------------------------.         |
+//	| write down configure and  |         |
+//	| pid file with containerID |         |
+//	| as name                   |         |
+//	'---------------------------'         |
+//	                                      |
+//	                                      |
+//	                                      v
 func (vm *VirtualManager) process() {
 	vcudaConfigFunc := func(podUID string) error {
 		dirName := filepath.Clean(filepath.Join(vm.cfg.VirtualManagerPath, podUID))
@@ -458,19 +460,6 @@ func (vm *VirtualManager) registerVDeviceWithContainerName(podUID, contName stri
 	return &vcudaapi.VDeviceResponse{}, nil
 }
 
-//RegisterVDevice handles RPC calls from vcuda client
-func (vm *VirtualManager) RegisterVDevice(_ context.Context, req *vcudaapi.VDeviceRequest) (*vcudaapi.VDeviceResponse, error) {
-	podUID := req.PodUid
-	contName := req.ContainerName
-	contID := req.ContainerId
-
-	if len(contName) > 0 {
-		return vm.registerVDeviceWithContainerName(podUID, contName)
-	}
-
-	return vm.registerVDeviceWithContainerId(podUID, contID)
-}
-
 func (vm *VirtualManager) writePidFile(filename string, contID string) error {
 	klog.V(2).Infof("Write %s", filename)
 	cFileName := C.CString(filename)
@@ -584,6 +573,18 @@ func (vm *VirtualManager) writeConfigFile(filename string, podUID, name string) 
 	return nil
 }
 
+// RegisterVDevice handles RPC calls from vcuda client
+func (vm *VirtualManager) RegisterVDevice(_ context.Context, req *vcudaapi.VDeviceRequest) (*vcudaapi.VDeviceResponse, error) {
+	podUID := req.PodUid
+	contName := req.ContainerName
+	contID := req.ContainerId
+
+	if len(contName) > 0 {
+		return vm.registerVDeviceWithContainerName(podUID, contName)
+	}
+
+	return vm.registerVDeviceWithContainerId(podUID, contID)
+}
 func runVDeviceServer(dir string, handler vcudaapi.VCUDAServiceServer) *grpc.Server {
 	socketFile := filepath.Join(dir, types.VDeviceSocket)
 	err := syscall.Unlink(socketFile)

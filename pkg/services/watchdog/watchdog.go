@@ -36,7 +36,7 @@ const (
 	podHostField = "spec.nodeName"
 )
 
-//PodCache contains a podInformer of pod
+// PodCache contains a podInformer of pod
 type PodCache struct {
 	podInformer informerCore.PodInformer
 }
@@ -45,7 +45,7 @@ var (
 	podCache *PodCache
 )
 
-//NewPodCache creates a new podCache
+// NewPodCache creates a new podCache
 func NewPodCache(client kubernetes.Interface, hostName string) {
 	podCache = new(PodCache)
 
@@ -64,7 +64,7 @@ func NewPodCache(client kubernetes.Interface, hostName string) {
 	klog.V(2).Infof("Pod cache is running")
 }
 
-//NewPodCacheForTest creates a new podCache for testing
+// NewPodCacheForTest creates a new podCache for testing
 func NewPodCacheForTest(client kubernetes.Interface) {
 	podCache = new(PodCache)
 
@@ -80,42 +80,14 @@ func NewPodCacheForTest(client kubernetes.Interface) {
 	klog.V(2).Infof("Pod cache is running")
 }
 
-//OnAdd is a callback function for podInformer, do nothing for now.
+// OnAdd is a callback function for podInformer, do nothing for now.
 func (p *PodCache) OnAdd(obj interface{}) {}
 
-//OnUpdate is a callback function for podInformer, do nothing for now.
+// OnUpdate is a callback function for podInformer, do nothing for now.
 func (p *PodCache) OnUpdate(oldObj, newObj interface{}) {}
 
-//OnDelete is a callback function for podInformer, do nothing for now.
+// OnDelete is a callback function for podInformer, do nothing for now.
 func (p *PodCache) OnDelete(obj interface{}) {}
-
-//GetActivePods get all active pods from podCache and returns them.
-func GetActivePods() map[string]*v1.Pod {
-	if podCache == nil {
-		return nil
-	}
-
-	activePods := make(map[string]*v1.Pod)
-
-	for _, item := range podCache.podInformer.Informer().GetStore().List() {
-		pod, ok := item.(*v1.Pod)
-		if !ok {
-			continue
-		}
-
-		if podIsTerminated(pod) {
-			continue
-		}
-
-		if !utils.IsGPURequiredPod(pod) {
-			continue
-		}
-
-		activePods[string(pod.UID)] = pod
-	}
-
-	return activePods
-}
 
 func GetPod(namespace, name string) (*v1.Pod, error) {
 	pod, err := podCache.podInformer.Lister().Pods(namespace).Get(name)
@@ -147,4 +119,32 @@ func notRunning(statuses []v1.ContainerStatus) bool {
 		}
 	}
 	return true
+}
+
+// GetActivePods get all active pods from podCache and returns them.
+func GetActivePods() map[string]*v1.Pod {
+	if podCache == nil {
+		return nil
+	}
+
+	activePods := make(map[string]*v1.Pod)
+
+	for _, item := range podCache.podInformer.Informer().GetStore().List() {
+		pod, ok := item.(*v1.Pod)
+		if !ok {
+			continue
+		}
+
+		if podIsTerminated(pod) {
+			continue
+		}
+
+		if !utils.IsGPURequiredPod(pod) {
+			continue
+		}
+
+		activePods[string(pod.UID)] = pod
+	}
+
+	return activePods
 }

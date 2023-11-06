@@ -44,34 +44,6 @@ var (
 	containerRoot = cgroup.NewCgroupName([]string{}, "kubepods")
 )
 
-func NewContainerRuntimeManager(cgroupDriver, endpoint string, requestTimeout time.Duration) (*containerRuntimeManager, error) {
-	dialOptions := []grpc.DialOption{grpc.WithInsecure(), grpc.WithDialer(utils.UnixDial), grpc.WithBlock(), grpc.WithTimeout(time.Second * 5)}
-	conn, err := grpc.Dial(endpoint, dialOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	client := criapi.NewRuntimeServiceClient(conn)
-
-	m := &containerRuntimeManager{
-		cgroupDriver:   cgroupDriver,
-		client:         client,
-		requestTimeout: requestTimeout,
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), m.requestTimeout)
-	defer cancel()
-	resp, err := client.Version(ctx, &criapi.VersionRequest{Version: "0.1.0"})
-	if err != nil {
-		return nil, err
-	}
-
-	klog.V(2).Infof("Container runtime is %s", resp.RuntimeName)
-	m.runtimeName = resp.RuntimeName
-
-	return m, nil
-}
-
 func (m *containerRuntimeManager) GetPidsInContainers(containerID string) ([]int, error) {
 	req := &criapi.ContainerStatusRequest{
 		ContainerId: containerID,
@@ -173,6 +145,8 @@ func (m *containerRuntimeManager) getCgroupName(pod *v1.Pod, containerID string)
 	return "", fmt.Errorf("unsupported cgroup driver")
 }
 
+func (m *containerRuntimeManager) RuntimeName() string { return m.runtimeName }
+
 func (m *containerRuntimeManager) InspectContainer(containerID string) (*criapi.ContainerStatus, error) {
 	req := &criapi.ContainerStatusRequest{
 		ContainerId: containerID,
@@ -189,4 +163,30 @@ func (m *containerRuntimeManager) InspectContainer(containerID string) (*criapi.
 	return resp.Status, nil
 }
 
-func (m *containerRuntimeManager) RuntimeName() string { return m.runtimeName }
+func NewContainerRuntimeManager(cgroupDriver, endpoint string, requestTimeout time.Duration) (*containerRuntimeManager, error) {
+	dialOptions := []grpc.DialOption{grpc.WithInsecure(), grpc.WithDialer(utils.UnixDial), grpc.WithBlock(), grpc.WithTimeout(time.Second * 5)}
+	conn, err := grpc.Dial(endpoint, dialOptions...)
+	if err != nil {
+		return nil, err
+	}
+
+	client := criapi.NewRuntimeServiceClient(conn)
+
+	m := &containerRuntimeManager{
+		cgroupDriver:   cgroupDriver,
+		client:         client,
+		requestTimeout: requestTimeout,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), m.requestTimeout)
+	defer cancel()
+	resp, err := client.Version(ctx, &criapi.VersionRequest{Version: "0.1.0"})
+	if err != nil {
+		return nil, err
+	}
+
+	klog.V(2).Infof("Container runtime is %s", resp.RuntimeName)
+	m.runtimeName = resp.RuntimeName
+
+	return m, nil
+}

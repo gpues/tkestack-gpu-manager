@@ -109,7 +109,7 @@ func (k *kubeletStub) start() error {
 	return utils.WaitForServer(k.socket)
 }
 
-//stop servers and clean up
+// stop servers and clean up
 func stopServer(srv *managerImpl) {
 	for _, s := range srv.bundleServer {
 		s.Stop()
@@ -121,7 +121,7 @@ func stopServer(srv *managerImpl) {
 func TestServer(t *testing.T) {
 	flag.Parse()
 	tempDir, _ := ioutil.TempDir("", "gpu-manager")
-
+	fmt.Println(tempDir)
 	//init opt and cfg
 	opt := options.NewOptions()
 	opt.VirtualManagerPath = filepath.Clean(filepath.Join(tempDir, "vm"))
@@ -166,7 +166,7 @@ func TestServer(t *testing.T) {
 	treeInitFn := deviceFactory.NewFuncForName(cfg.Driver)
 	obj := treeInitFn(cfg)
 	tree, _ := obj.(*nvidia.NvidiaTree)
-
+	// nvidia-smi nvlink --status
 	testCase1 :=
 		`    GPU0    GPU1    GPU2    GPU3    GPU4    GPU5
 GPU0      X      PIX     PHB     PHB     SOC     SOC

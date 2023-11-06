@@ -43,7 +43,7 @@ import (
 	"k8s.io/klog"
 )
 
-//constants used in this package
+// constants used in this package
 const (
 	TruncateLen = 31
 	kubePrefix  = "k8s"
@@ -54,17 +54,17 @@ var (
 	DefaultDialOptions = []grpc.DialOption{grpc.WithInsecure(), grpc.WithDialer(UnixDial), grpc.WithBlock()}
 )
 
-//UnixDial dials to a unix socket using net.DialTimeout
+// UnixDial dials to a unix socket using net.DialTimeout
 func UnixDial(addr string, timeout time.Duration) (net.Conn, error) {
 	return net.DialTimeout("unix", addr, timeout)
 }
 
-//IsValidGPUPath checks if path is valid Nvidia GPU device path
+// IsValidGPUPath checks if path is valid Nvidia GPU device path
 func IsValidGPUPath(path string) bool {
 	return regexp.MustCompile(types.NvidiaFullpathRE).MatchString(path)
 }
 
-//GetGPUMinorID returns id in Nvidia GPU device path
+// GetGPUMinorID returns id in Nvidia GPU device path
 func GetGPUMinorID(path string) (int, error) {
 	str := regexp.MustCompile(types.NvidiaFullpathRE).FindStringSubmatch(path)
 
@@ -77,7 +77,7 @@ func GetGPUMinorID(path string) (int, error) {
 	return int(id), nil
 }
 
-//GetGPUData get cores, memory and device names from annotations
+// GetGPUData get cores, memory and device names from annotations
 func GetGPUData(annotations map[string]string) (gpuUtil int64, gpuMemory int64, deviceNames []string) {
 	for k, v := range annotations {
 		switch {
@@ -93,7 +93,7 @@ func GetGPUData(annotations map[string]string) (gpuUtil int64, gpuMemory int64, 
 	return gpuUtil, gpuMemory, deviceNames
 }
 
-//NewFSWatcher returns a file watcher created by fsnotify.NewWatcher
+// NewFSWatcher returns a file watcher created by fsnotify.NewWatcher
 func NewFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -191,10 +191,6 @@ func IsStringSliceEqual(a, b []string) bool {
 
 func ShouldRetry(err error) bool {
 	return apierr.IsConflict(err) || apierr.IsServerTimeout(err)
-}
-
-func MakeContainerNamePrefix(containerName string) string {
-	return fmt.Sprintf("/%s_%s_", kubePrefix, containerName)
 }
 
 func IsGPURequiredPod(pod *v1.Pod) bool {
@@ -351,4 +347,8 @@ func GetVirtualControllerMountPath(resp *pluginapi.ContainerAllocateResponse) st
 	}
 
 	return ""
+}
+
+func MakeContainerNamePrefix(containerName string) string {
+	return fmt.Sprintf("/%s_%s_", kubePrefix, containerName)
 }
