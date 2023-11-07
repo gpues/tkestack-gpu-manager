@@ -29,13 +29,13 @@ type shareMode struct {
 	tree *nvidia.NvidiaTree
 }
 
-//NewShareMode returns a new shareMode struct.
+// NewShareMode returns a new shareMode struct.
 //
-//Evaluate() of shareMode returns one node with minimum available cores
-//which fullfil the request.
+// Evaluate() of shareMode returns one node with minimum available cores
+// which fullfil the request.
 //
-//Share mode means multiple application may share one GPU node which uses
-//GPU more efficiently.
+// Share mode means multiple application may share one GPU node which uses
+// GPU more efficiently.
 func NewShareMode(t *nvidia.NvidiaTree) *shareMode {
 	return &shareMode{t}
 }

@@ -17,7 +17,7 @@
 
 package cache
 
-//Info contains infomations aboud GPU
+// Info contains infomations aboud GPU
 type Info struct {
 	Devices []string
 	Cores   int64
@@ -31,14 +31,14 @@ type PodCache struct {
 	PodGPUMapping map[string]containerToInfo
 }
 
-//NewAllocateCache creates new PodCache
+// NewAllocateCache creates new PodCache
 func NewAllocateCache() *PodCache {
 	return &PodCache{
 		PodGPUMapping: make(map[string]containerToInfo),
 	}
 }
 
-//Pods returns all pods in PodCache
+// Pods returns all pods in PodCache
 func (pgpu *PodCache) Pods() []string {
 	ret := make([]string, 0)
 	for k := range pgpu.PodGPUMapping {
@@ -47,7 +47,7 @@ func (pgpu *PodCache) Pods() []string {
 	return ret
 }
 
-//Insert adds GPU info of pod into PodCache if not exist
+// Insert adds GPU info of pod into PodCache if not exist
 func (pgpu *PodCache) Insert(podUID, contName string, cache *Info) {
 	if _, exists := pgpu.PodGPUMapping[podUID]; !exists {
 		pgpu.PodGPUMapping[podUID] = make(containerToInfo)
@@ -55,7 +55,7 @@ func (pgpu *PodCache) Insert(podUID, contName string, cache *Info) {
 	pgpu.PodGPUMapping[podUID][contName] = cache
 }
 
-//GetCache returns GPU of pod if exist
+// GetCache returns GPU of pod if exist
 func (pgpu *PodCache) GetCache(podUID string) map[string]*Info {
 	containers, exists := pgpu.PodGPUMapping[podUID]
 	if !exists {
@@ -65,7 +65,7 @@ func (pgpu *PodCache) GetCache(podUID string) map[string]*Info {
 	return containers
 }
 
-//Delete removes GPU info in PodCache
+// Delete removes GPU info in PodCache
 func (pgpu *PodCache) Delete(uid string) {
 	delete(pgpu.PodGPUMapping, uid)
 }

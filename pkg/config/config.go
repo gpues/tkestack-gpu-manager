@@ -46,7 +46,7 @@ type Config struct {
 	VCudaRequestsQueue chan *types.VCudaRequest
 }
 
-//ExtraConfig contains extra options other than Config
+// ExtraConfig contains extra options other than Config
 type ExtraConfig struct {
 	Devices []string `json:"devices,omitempty"`
 }

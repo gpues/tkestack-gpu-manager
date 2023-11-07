@@ -142,7 +142,7 @@ const (
 // VirtualManager manages vGPUs
 type VirtualManager struct {
 	sync.Mutex
-
+	vcudaapi.UnimplementedVCUDAServiceServer
 	cfg                     *config.Config
 	containerRuntimeManager runtime.ContainerRuntimeInterface
 	vDeviceServers          map[string]*grpc.Server

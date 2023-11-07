@@ -21,14 +21,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-//Manager api
+// Manager api
 type Manager interface {
 	Ready() bool
 	Run() error
 	RegisterToKubelet() error
 }
 
-//ResourceServer api for manager
+// ResourceServer api for manager
 type ResourceServer interface {
 	Run() error
 	Stop()

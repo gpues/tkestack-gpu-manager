@@ -23,7 +23,7 @@ import (
 	"tkestack.io/gpu-manager/pkg/types"
 )
 
-//LessFunc represents funcion to compare two NvidiaNode
+// LessFunc represents funcion to compare two NvidiaNode
 type LessFunc func(p1, p2 *NvidiaNode) bool
 
 var (

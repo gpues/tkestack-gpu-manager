@@ -93,7 +93,7 @@ func getTypeName(name string) string {
 	return ""
 }
 
-//NewNodeLabeler returns a new nodeLabeler
+// NewNodeLabeler returns a new nodeLabeler
 func NewNodeLabeler(client v1core.CoreV1Interface, hostname string, labels map[string]string) *nodeLabeler {
 	if len(hostname) == 0 {
 		hostname, _ = os.Hostname()

@@ -42,10 +42,10 @@ import (
 	"tkestack.io/nvml"
 )
 
-//Display is used to show GPU device usage
+// Display is used to show GPU device usage
 type Display struct {
 	sync.Mutex
-
+	displayapi.UnimplementedGPUDisplayServer
 	config                  *config.Config
 	tree                    *nvtree.NvidiaTree
 	containerRuntimeManager runtime.ContainerRuntimeInterface
@@ -54,7 +54,7 @@ type Display struct {
 var _ displayapi.GPUDisplayServer = &Display{}
 var _ prometheus.Collector = &Display{}
 
-//NewDisplay returns a new Display
+// NewDisplay returns a new Display
 func NewDisplay(config *config.Config, tree device.GPUTree, runtimeManager runtime.ContainerRuntimeInterface) *Display {
 	_tree, _ := tree.(*nvtree.NvidiaTree)
 	return &Display{
@@ -64,7 +64,7 @@ func NewDisplay(config *config.Config, tree device.GPUTree, runtimeManager runti
 	}
 }
 
-//PrintGraph updates the tree and returns the result of tree.PrintGraph
+// PrintGraph updates the tree and returns the result of tree.PrintGraph
 func (disp *Display) PrintGraph(context.Context, *google_protobuf1.Empty) (*displayapi.GraphResponse, error) {
 	disp.tree.Update()
 
@@ -73,7 +73,7 @@ func (disp *Display) PrintGraph(context.Context, *google_protobuf1.Empty) (*disp
 	}, nil
 }
 
-//PrintUsages returns usage info getting from docker and watchdog
+// PrintUsages returns usage info getting from docker and watchdog
 func (disp *Display) PrintUsages(context.Context, *google_protobuf1.Empty) (*displayapi.UsageResponse, error) {
 	disp.Lock()
 	defer disp.Unlock()
@@ -178,7 +178,7 @@ func (disp *Display) getPodUsage(pod *v1.Pod) map[string]*displayapi.Devices {
 	return podUsage
 }
 
-//Version returns version of GPU manager
+// Version returns version of GPU manager
 func (disp *Display) Version(context.Context, *google_protobuf1.Empty) (*displayapi.VersionResponse, error) {
 	resp := &displayapi.VersionResponse{
 		Version: version.Get().String(),

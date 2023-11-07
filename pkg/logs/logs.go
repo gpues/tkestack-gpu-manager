@@ -49,37 +49,37 @@ func InitLogs() {
 	}()
 }
 
-//FlushLogs calls klog.Flush to flush all pending log I/O
+// FlushLogs calls klog.Flush to flush all pending log I/O
 func FlushLogs() {
 	klog.Flush()
 }
 
-//Fatal wraps klog.FatalDepth
+// Fatal wraps klog.FatalDepth
 func (gw klogWriter) Fatal(args ...interface{}) {
 	klog.FatalDepth(1, args...)
 }
 
-//Fatalf wraps klog.Fatalf
+// Fatalf wraps klog.Fatalf
 func (gw klogWriter) Fatalf(format string, args ...interface{}) {
 	klog.Fatalf(format, args...)
 }
 
-//Fatalln wraps klog.Fatalln
+// Fatalln wraps klog.Fatalln
 func (gw klogWriter) Fatalln(args ...interface{}) {
 	klog.Fatalln(args...)
 }
 
-//Print wraps klog.InfoDepth
+// Print wraps klog.InfoDepth
 func (gw klogWriter) Print(args ...interface{}) {
 	klog.InfoDepth(1, args...)
 }
 
-//Printf wraps klog.V(2).Infof
+// Printf wraps klog.V(2).Infof
 func (gw klogWriter) Printf(format string, args ...interface{}) {
 	klog.V(2).Infof(format, args...)
 }
 
-//Println wraps klog.Info
+// Println wraps klog.Info
 func (gw klogWriter) Println(args ...interface{}) {
 	klog.Info(args...)
 }

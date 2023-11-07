@@ -29,10 +29,10 @@ type linkMode struct {
 	tree *nvidia.NvidiaTree
 }
 
-//NewLinkMode returns a new linkMode struct.
+// NewLinkMode returns a new linkMode struct.
 //
-//Evaluate() of linkMode returns nodes with minimum connection overhead
-//of each other.
+// Evaluate() of linkMode returns nodes with minimum connection overhead
+// of each other.
 func NewLinkMode(t *nvidia.NvidiaTree) *linkMode {
 	return &linkMode{t}
 }

@@ -4,6 +4,8 @@ package display;
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
+option go_package = "pkg/api/runtime/display";
+
 
 // GPUDisplay service defines the aux APIs for remote request
 service GPUDisplay {

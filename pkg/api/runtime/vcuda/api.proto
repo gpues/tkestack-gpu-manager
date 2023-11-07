@@ -1,6 +1,7 @@
 syntax = 'proto3';
 
 package vcuda;
+option go_package = "pkg/api/runtime/vcuda";
 
 service VCUDAService {
   rpc RegisterVDevice(VDeviceRequest) returns (VDeviceResponse) {}

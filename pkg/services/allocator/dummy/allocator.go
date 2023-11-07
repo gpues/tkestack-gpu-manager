@@ -39,18 +39,18 @@ func init() {
 	allocator.Register("dummy", NewDummyAllocator)
 }
 
-//DummyAllocator is a struct{}
+// DummyAllocator is a struct{}
 type DummyAllocator struct {
 }
 
 var _ allocator.GPUTopoService = &DummyAllocator{}
 
-//NewDummyAllocator returns a new DummyAllocator
+// NewDummyAllocator returns a new DummyAllocator
 func NewDummyAllocator(_ *config.Config, _ device.GPUTree, _ kubernetes.Interface, _ response.Manager) allocator.GPUTopoService {
 	return &DummyAllocator{}
 }
 
-//Allocate returns /dev/fuse for dummy device
+// Allocate returns /dev/fuse for dummy device
 func (ta *DummyAllocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	resps := &pluginapi.AllocateResponse{}
 	for range reqs.ContainerRequests {
@@ -69,12 +69,12 @@ func (ta *DummyAllocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRe
 	return resps, nil
 }
 
-//ListAndWatch not implement
+// ListAndWatch not implement
 func (ta *DummyAllocator) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 	return fmt.Errorf("not implement")
 }
 
-//ListAndWatchWithResourceName sends dummy device back to server
+// ListAndWatchWithResourceName sends dummy device back to server
 func (ta *DummyAllocator) ListAndWatchWithResourceName(resourceName string, e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 	devs := []*pluginapi.Device{
 		{
@@ -95,12 +95,12 @@ func (ta *DummyAllocator) ListAndWatchWithResourceName(resourceName string, e *p
 	return nil
 }
 
-//GetDevicePluginOptions returns empty DevicePluginOptions
+// GetDevicePluginOptions returns empty DevicePluginOptions
 func (ta *DummyAllocator) GetDevicePluginOptions(ctx context.Context, e *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{}, nil
 }
 
-//PreStartContainer returns empty PreStartContainerResponse
+// PreStartContainer returns empty PreStartContainerResponse
 func (ta *DummyAllocator) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
 }

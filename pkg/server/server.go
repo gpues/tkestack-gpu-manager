@@ -71,7 +71,7 @@ type managerImpl struct {
 	srv          *grpc.Server
 }
 
-//NewManager creates and returns a new managerImpl struct
+// NewManager creates and returns a new managerImpl struct
 func NewManager(cfg *config.Config) Manager {
 	manager := &managerImpl{
 		config:       cfg,

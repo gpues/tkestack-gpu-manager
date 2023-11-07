@@ -26,22 +26,22 @@ func init() {
 	device.Register("dummy", NewDummyTree)
 }
 
-//DummyTree represents dummy tree struct
+// DummyTree represents dummy tree struct
 type DummyTree struct {
 }
 
 var _ device.GPUTree = &DummyTree{}
 
-//NewDummyTree creates a new DummyTree
+// NewDummyTree creates a new DummyTree
 func NewDummyTree(_ *config.Config) device.GPUTree {
 	return &DummyTree{}
 }
 
-//Init a DummyTree
+// Init a DummyTree
 func (t *DummyTree) Init(_ string) {
 }
 
-//Update a DummyTree
+// Update a DummyTree
 func (t *DummyTree) Update() {
 
 }
