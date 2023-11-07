@@ -109,3 +109,44 @@ spec:
           hostPath:
             type: Directory
             path: /usr
+
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpu-manager
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  name: gpu-manager-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: gpu-manager
+  namespace: kube-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpu-manager-metric
+  namespace: kube-system
+  annotations:
+    prometheus.io/scrape: "true"
+  labels:
+    kubernetes.io/cluster-service: "true"
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 5678
+      protocol: TCP
+      targetPort: 5678
+  selector:
+    name: gpu-manager-ds
