@@ -17,9 +17,8 @@ function plugin::cleanup_image() {
 function plugin::generate_proto() {
 (
   docker run --rm \
-    -v ${ROOT}/pkg/api:/tmp/pkg/api \
-    -v ${ROOT}/staging/src:/tmp/staging/src \
-    -u $(id -u) \
+    -v `pwd`/pkg/api:/tmp/pkg/api \
+    -v `pwd`/staging/src:/tmp/staging/src \
     devsu/grpc-gateway \
       bash -c "cd /tmp && protoc \\
         --proto_path=staging/src:. \\
@@ -29,8 +28,7 @@ function plugin::generate_proto() {
         pkg/api/runtime/display/api.proto"
 
   docker run --rm \
-    -v ${ROOT}/pkg/api:/tmp/pkg/api \
-    -u $(id -u) \
+    -v `pwd`/pkg/api:/tmp/pkg/api \
     devsu/grpc-gateway \
       bash -c "cd /tmp && protoc \\
         --go_out=plugins=grpc:. \\
