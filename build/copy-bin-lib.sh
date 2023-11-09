@@ -5,7 +5,7 @@ set -o errexit
 set -o nounset
 set -ex
 
-FILE=${FILE:-"/etc/gpu-manager/volume.conf"}
+FILE=${FILE:-"/etc/gpu-manager/volume.json"}
 LIB_FILES=$(jq -r .volume[0].components.libraries[] ${FILE})
 BIN_FILES=$(jq -r .volume[0].components.binaries[] ${FILE})
 readonly NV_DIR="/usr/local/nvidia"

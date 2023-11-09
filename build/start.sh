@@ -14,7 +14,7 @@ echo "launch gpu manager"
 --v=${LOG_LEVEL} \
 --hostname-override=${NODE_NAME} \
 --share-mode=true \
---volume-config=/etc/gpu-manager/volume.conf \
+--volume-config=/etc/gpu-manager/volume.json \
 --extra-config=/etc/gpu-manager/extra-config.json \
 --extra-config=/etc/gpu-manager/extra-config.json \
 --log-dir=/var/log/gpu-manager \

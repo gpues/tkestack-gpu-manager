@@ -1,21 +1,44 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gpu-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: gpu-manager
+    namespace: kube-system
+
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: gpu-manager
   namespace: kube-system
+
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+apiVersion: v1
+kind: Service
 metadata:
-  name: gpu-manager-role
-subjects:
-- kind: ServiceAccount
-  name: gpu-manager
+  name: gpu-manager-metric
   namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: cluster-admin
-  apiGroup: rbac.authorization.k8s.io
+  annotations:
+    prometheus.io/scrape: "true"
+  labels:
+    kubernetes.io/cluster-service: "true"
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 5678
+      protocol: TCP
+      targetPort: 5678
+  selector:
+    name: gpu-manager-ds
+
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -32,12 +55,10 @@ spec:
     metadata:
       # This annotation is deprecated. Kept here for backward compatibility
       # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
         name: gpu-manager-ds
     spec:
-      serviceAccount: gpu-manager
+      serviceAccountName: gpu-manager
       tolerations:
         # This toleration is deprecated. Kept here for backward compatibility
         # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
@@ -56,8 +77,9 @@ spec:
         nvidia-device-enable: enable
       hostPID: true
       containers:
-        - image: tkestack/gpu-manager:v1.1.5
-          imagePullPolicy: Never
+#        - image: tkestack/gpu-manager:v1.1.5
+        - image: tkestack/gpu-manager:v1.0.3
+          imagePullPolicy: IfNotPresent
           name: gpu-manager
           securityContext:
             privileged: true
@@ -82,14 +104,11 @@ spec:
             - name: usr-directory
               mountPath: /usr/local/host
               readOnly: true
-            - name: kube-root
-              mountPath: /root/.kube
-              readOnly: true
           env:
             - name: LOG_LEVEL
               value: "4"
             - name: EXTRA_FLAGS
-              value: "--container-runtime-endpoint=/var/run/cri-dockerd.sock"
+              value: "--logtostderr=false"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
@@ -131,91 +150,6 @@ spec:
           hostPath:
             type: Directory
             path: /usr
-        - name: kube-root
-          hostPath:
-            type: Directory
-            path: /root/.kube
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: gpu-admission
-  namespace: kube-system
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: gpu-admission-as-kube-scheduler
-subjects:
-- kind: ServiceAccount
-  name: gpu-admission
-  namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: system:kube-scheduler
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: gpu-admission-as-volume-scheduler
-subjects:
-- kind: ServiceAccount
-  name: gpu-admission
-  namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: system:volume-scheduler
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: gpu-admission-as-daemon-set-controller
-subjects:
-- kind: ServiceAccount
-  name: gpu-admission
-  namespace: kube-system
-roleRef:
-  kind: ClusterRole
-  name: system:controller:daemon-set-controller
-  apiGroup: rbac.authorization.k8s.io
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    component: scheduler
-    tier: control-plane
-  name: gpu-admission
-  namespace: kube-system
-spec:
-  selector:
-    matchLabels:
-      component: scheduler
-      tier: control-plane
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        component: scheduler
-        tier: control-plane
-        version: second
-    spec:
-      serviceAccountName: gpu-admission
-      containers:
-      - image: thomassong/gpu-admission:47d56ae9
-        imagePullPolicy: Never
-        name: gpu-admission
-        env:
-          - name: LOG_LEVEL
-            value: "4"
-        ports:
-          - containerPort: 3456
-      dnsPolicy: ClusterFirstWithHostNet
-      hostNetwork: true
-      priority: 2000000000
-      priorityClassName: system-cluster-critical
 ---
 apiVersion: v1
 kind: Pod
@@ -226,13 +160,23 @@ metadata:
 spec:
   containers:
     - name: c
-      image: cupy/nvidia-cuda:10.2-devel-centos7
+      #      image: nvidia/cuda:12.2.2-devel-ubuntu22.04
+      image: ccr.ccs.tencentyun.com/menghe/tensorflow-gputest:0.2
       resources:
+        requests:
+          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-memory: "20"
         limits:
-          'tencent.com/vcuda-core': 100
-          'tencent.com/vcuda-memory': 2
+          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-memory: "20"
       command:
         - "/bin/sh"
         - "-c"
         - "sleep 1d"
   restartPolicy: Always
+
+# kubectl label node *.*.*.* nvidia-device-enable=enable
+# # 给宿主机增加nvidia-uvm设备
+#sudo /sbin/modprobe nvidia-uvm
+#D=`grep nvidia-uvm /proc/devices | awk '{print $1}'`
+#sudo mknod -m 666 /dev/nvidia-uvm c $D 0
