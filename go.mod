@@ -1,6 +1,6 @@
 module tkestack.io/gpu-manager
 
-go 1.18
+go 1.19
 
 replace tkestack.io/nvml => github.com/tkestack/go-nvml v0.0.0-20191217064248-7363e630a33e
 

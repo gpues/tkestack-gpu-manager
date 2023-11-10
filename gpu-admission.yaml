@@ -60,7 +60,7 @@ spec:
               value: "4"
             - name: EXTRA_FLAGS
               value: --incluster-mode=true
-          image: ccr.ccs.tencentyun.com/tkeimages/gpu-quota-admission:latest
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-admission:v1.1.5
           imagePullPolicy: IfNotPresent
           name: gpu-quota-admission
           ports:
