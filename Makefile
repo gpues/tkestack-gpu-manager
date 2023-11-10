@@ -10,7 +10,8 @@ test:
 	go fmt ./...
 	go test -timeout=1m -bench=. -cover -v ./...
 proto:
-	go get github.com/grpc-ecosystem/grpc-gateway@v1.16.0
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 	protoc --proto_path=staging/src:. --proto_path="${shell go env GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis":. --go_out=. --go-grpc_out=./ --grpc-gateway_out=logtostderr=true:. pkg/api/runtime/display/api.proto
 	protoc --proto_path=staging/src:. --proto_path="${shell go env GOPATH}/pkg/mod/github.com/grpc-ecosystem/grpc-gateway@v1.16.0/third_party/googleapis":. --go_out=. --go-grpc_out=./ pkg/api/runtime/vcuda/api.proto
 
@@ -23,4 +24,4 @@ run:
 #  @revive -config revive.toml -exclude vendor/... -exclude pkg/api/runtime/... ./...
 
 multi_arch:
-	docker buildx build -f Dockerfile --pull --no-cache --platform=linux/amd64,linux/arm64 -t registry.cn-hangzhou.aliyuncs.com/acejilam/gpu-manager:v1.1.5 . --push
+	docker buildx build -f Dockerfile --pull --platform=linux/amd64,linux/arm64 -t registry.cn-hangzhou.aliyuncs.com/acejilam/gpu-manager:v1.1.5 . --push

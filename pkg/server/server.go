@@ -20,6 +20,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -46,9 +47,7 @@ import (
 	"tkestack.io/gpu-manager/pkg/types"
 	"tkestack.io/gpu-manager/pkg/utils"
 
-	systemd "github.com/coreos/go-systemd/daemon"
 	google_protobuf1 "github.com/golang/protobuf/ptypes/empty"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/context"
@@ -61,14 +60,14 @@ import (
 )
 
 type managerImpl struct {
-	config *config.Config
+	displayapi.UnimplementedGPUDisplayServer
 
+	config         *config.Config
 	allocator      allocFactory.GPUTopoService
 	displayer      *display.Display
 	virtualManager *vitrual_manager.VirtualManager
-
-	bundleServer map[string]ResourceServer
-	srv          *grpc.Server
+	bundleServer   map[string]ResourceServer
+	srv            *grpc.Server
 }
 
 // NewManager creates and returns a new managerImpl struct
@@ -124,21 +123,21 @@ func (m *managerImpl) Run() error {
 		}
 	}
 
-	sent, err := systemd.SdNotify(true, "READY=1\n")
-	if err != nil {
-		klog.Errorf("Unable to send systemd daemon successful start message: %v\n", err)
-	}
-
-	if !sent {
-		klog.Errorf("Unable to set Type=notify in systemd service file?")
-	}
+	//sent, err := systemd.SdNotify(true, "READY=1\n")
+	//if err != nil {
+	//	klog.Errorf("Unable to send systemd daemon successful start message: %v\n", err)
+	//}
+	//
+	//if !sent {
+	//	klog.Errorf("Unable to set Type=notify in systemd service file?")
+	//}
 
 	var (
 		client    *kubernetes.Clientset
 		clientCfg *rest.Config
 	)
 
-	clientCfg, err = clientcmd.BuildConfigFromFlags("", m.config.KubeConfig)
+	clientCfg, err := clientcmd.BuildConfigFromFlags("", m.config.KubeConfig)
 	if err != nil {
 		return fmt.Errorf("invalid client config: err(%v)", err)
 	}

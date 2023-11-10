@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.2.2-devel-centos7 as build
+FROM registry.cn-hangzhou.aliyuncs.com/acejilam/nvidia-cuda:12.2.2-devel-centos7 as build
 WORKDIR /gpu
 ENV GOLANG_VERSION 1.21.0
 RUN curl -sSL https://dl.google.com/go/go${GOLANG_VERSION}.linux-amd64.tar.gz \
@@ -17,6 +17,7 @@ FROM registry.cn-hangzhou.aliyuncs.com/acejilam/centos:7
 
 COPY --from=build /tmp/gpu-manager /usr/bin/
 COPY --from=build /tmp/gpu-client /usr/bin/
+COPY ./build/libcuda-control.so /usr/lib/
 
 
 # kubelet
