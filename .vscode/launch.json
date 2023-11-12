@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Package",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${fileDirname}",
+      "args": [
+        "--share-mode=true",
+        "--volume-config=/etc/gpu-manager/volume.json",
+        "--extra-config=/etc/gpu-manager/extra-config.json",
+        "--log-dir=/var/log/gpu-manager",
+        "--query-addr=0.0.0.0",
+        "--container-runtime-endpoint=/var/run/cri-dockerd.sock",
+        "--kubeconfig=/root/.kube/config",
+        "--hostname-override=vm",
+        "--container-runtime-endpoint=/var/run/cri-dockerd.sock",
+        "--device-plugin-path=/var/lib/kubelet/device-plugins"
+      ]
+    }
+  ]
+}

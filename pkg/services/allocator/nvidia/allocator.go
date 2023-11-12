@@ -572,14 +572,14 @@ func (ta *NvidiaTopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container,
 	if shareMode {
 		ctntResp.Mounts = append(ctntResp.Mounts, &pluginapi.Mount{
 			ContainerPath: "/usr/local/nvidia",
-			HostPath:      types.DriverLibraryPath,
-			ReadOnly:      true,
+			HostPath:      types.DriverLibraryPath, // /etc/gpu-manager/vdriver + nvidia
+			ReadOnly:      false,
 		})
 	} else {
 		ctntResp.Mounts = append(ctntResp.Mounts, &pluginapi.Mount{
 			ContainerPath: "/usr/local/nvidia",
 			HostPath:      types.DriverOriginLibraryPath,
-			ReadOnly:      true,
+			ReadOnly:      false,
 		})
 	}
 

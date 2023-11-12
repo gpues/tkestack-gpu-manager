@@ -4,7 +4,7 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-source copy-bin-lib.sh
+copy-bin-lib
 
 echo "rebuild ldcache"
 /usr/sbin/ldconfig
@@ -16,13 +16,10 @@ echo "launch gpu manager"
 --share-mode=true \
 --volume-config=/etc/gpu-manager/volume.json \
 --extra-config=/etc/gpu-manager/extra-config.json \
---extra-config=/etc/gpu-manager/extra-config.json \
 --log-dir=/var/log/gpu-manager \
---query-addr=0.0.0.0 \
---addr=/var/run/gpu-manager.sock \
---logtostderr
+--query-addr=0.0.0.0 ${EXTRA_FLAGS:-""}
 
-
+# 宿主机目录 /usr/ -> 宿主机目录 /usr/local/gpu/host
 
 # -v /sys/fs/cgroup:/sys/fs/cgroup
 # -v /usr:/usr/local/host:

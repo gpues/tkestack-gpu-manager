@@ -30,7 +30,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
 	"tkestack.io/gpu-manager/cmd/manager/options"
 	"tkestack.io/gpu-manager/pkg/config"
 	deviceFactory "tkestack.io/gpu-manager/pkg/device"

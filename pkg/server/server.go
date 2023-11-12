@@ -77,7 +77,7 @@ func NewManager(cfg *config.Config) Manager {
 		bundleServer: make(map[string]ResourceServer),
 		srv:          grpc.NewServer(),
 	}
-
+	manager.setupGRPCService()
 	return manager
 }
 
@@ -98,7 +98,7 @@ func (m *managerImpl) Ready() bool {
 	return readyServers > 0 && readyServers == len(m.bundleServer)
 }
 
-// #lizard forgives
+// Run #lizard forgives
 func (m *managerImpl) Run() error {
 	if err := m.validExtraConfig(m.config.ExtraConfigPath); err != nil {
 		klog.Errorf("Can not load extra config, err %s", err)
@@ -166,8 +166,7 @@ func (m *managerImpl) Run() error {
 	klog.V(2).Infof("Load container response data")
 	responseManager := response.NewResponseManager()
 	if err := responseManager.LoadFromFile(m.config.DevicePluginPath); err != nil {
-		klog.Errorf("can't load container response data, %+#v", err)
-		return err
+		klog.Warningf("can't load container response data, %+#v", err)
 	}
 
 	m.virtualManager = vitrual_manager.NewVirtualManager(m.config, containerRuntimeManager, responseManager)
@@ -188,7 +187,6 @@ func (m *managerImpl) Run() error {
 	m.displayer = display.NewDisplay(m.config, tree, containerRuntimeManager)
 
 	klog.V(2).Infof("Starting the GRPC server, driver %s, queryPort %d", m.config.Driver, m.config.QueryPort)
-	m.setupGRPCService()
 	mux, err := m.setupGRPCGatewayService()
 	if err != nil {
 		return err

@@ -92,9 +92,9 @@ func (t *NvidiaTree) Init(input string) {
 	if err == nil {
 		t.realMode = true
 		return
+	} else {
+		klog.Errorf("Can't use nvidia library, err %s. Use text parser", err)
 	}
-
-	klog.V(2).Infof("Can't use nvidia library, err %s. Use text parser", err)
 
 	err = t.parseFromString(input)
 

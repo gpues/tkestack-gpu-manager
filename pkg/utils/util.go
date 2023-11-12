@@ -199,9 +199,7 @@ func IsGPURequiredPod(pod *v1.Pod) bool {
 
 	// Check if pod request for GPU resource
 	if vcore <= 0 || (vcore < nvtree.HundredCore && vmemory <= 0) {
-		klog.V(4).Infof("Pod %s in namespace %s does not Request for GPU resource",
-			pod.Name,
-			pod.Namespace)
+		klog.V(4).Infof("Pod %s in namespace %s does not Request for GPU resource", pod.Name, pod.Namespace)
 		return false
 	}
 

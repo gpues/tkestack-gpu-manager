@@ -18,15 +18,13 @@
 package volume
 
 import (
-	"debug/elf"
 	"encoding/json"
-	"fmt"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
-
 	"tkestack.io/gpu-manager/pkg/services/volume/ldcache"
 	"tkestack.io/gpu-manager/pkg/types"
 
@@ -35,13 +33,12 @@ import (
 
 // VolumeManager manages volumes used by containers running GPU application
 type VolumeManager struct {
-	Config  []Config `json:"volume,omitempty"`
-	cfgPath string
-
+	Config          []Config `json:"volume,omitempty"`
+	cfgPath         string
 	cudaControlFile string
-	cudaSoname      map[string]string
+	CudaSoname      map[string]string `json:"CudaSoname"`
 	mlSoName        map[string]string
-	share           bool
+	Share           bool `json:"Share"`
 }
 
 type components map[string][]string
@@ -58,6 +55,12 @@ const (
 	binDir   = "bin"
 	lib32Dir = "lib"
 	lib64Dir = "lib64"
+)
+const (
+	FILE       = "/etc/gpu-manager/volume.json"
+	NvDir      = "/etc/gpu-manager/vdriver/nvidia"
+	FindBase   = "/usr/local/gpu/"
+	controlLib = "/usr/local/gpu/libvgpu.so"
 )
 
 type volumeDir struct {
@@ -85,9 +88,9 @@ func NewVolumeManager(config string, share bool) (*VolumeManager, error) {
 
 	volumeManager := &VolumeManager{
 		cfgPath:    filepath.Dir(config),
-		cudaSoname: make(map[string]string),
+		CudaSoname: make(map[string]string),
 		mlSoName:   make(map[string]string),
-		share:      share,
+		Share:      share,
 	}
 
 	if err := json.NewDecoder(f).Decode(volumeManager); err != nil {
@@ -134,7 +137,20 @@ func (vm *VolumeManager) Run() (err error) {
 
 				vol.dirs = append(vol.dirs, volumeDir{binDir, bins})
 			case "libraries":
-				libs32, libs64 := cache.Lookup(c...)
+				var libs32 []string
+				var libs64 []string
+				filepath.WalkDir(filepath.Join(NvDir, "lib"), func(path string, d fs.DirEntry, err error) error {
+					if path != filepath.Join(NvDir, "lib") {
+						libs32 = append(libs32, path)
+					}
+					return nil
+				})
+				filepath.WalkDir(filepath.Join(NvDir, "lib64"), func(path string, d fs.DirEntry, err error) error {
+					if path != filepath.Join(NvDir, "lib64") {
+						libs64 = append(libs64, path)
+					}
+					return nil
+				})
 				klog.V(2).Infof("Find 32bit libraries: %+v", libs32)
 				klog.V(2).Infof("Find 64bit libraries: %+v", libs64)
 
@@ -156,7 +172,7 @@ func (vm *VolumeManager) Run() (err error) {
 
 // #lizard forgives
 func (vm *VolumeManager) mirror(vols VolumeMap) error {
-	for driver, vol := range vols {
+	for _, vol := range vols {
 		if exist, _ := vol.exist(); !exist {
 			if err := os.MkdirAll(vol.Path, 0755); err != nil {
 				return err
@@ -174,18 +190,18 @@ func (vm *VolumeManager) mirror(vols VolumeMap) error {
 			// ldconfig does since our volume will only show up at runtime.
 			for _, f := range d.files {
 				klog.V(2).Infof("Mirror %s to %s", f, vpath)
-				if err := vm.mirrorFiles(driver, vpath, f); err != nil {
-					return err
-				}
 
 				if strings.HasPrefix(path.Base(f), "libcuda.so") {
 					driverStr := strings.SplitN(strings.TrimPrefix(path.Base(f), "libcuda.so."), ".", 2)
+					if len(driverStr) < 2 {
+						continue
+					}
 					types.DriverVersionMajor, _ = strconv.Atoi(driverStr[0])
 					types.DriverVersionMinor, _ = strconv.Atoi(driverStr[1])
 					klog.V(2).Infof("Driver version: %d.%d", types.DriverVersionMajor, types.DriverVersionMinor)
 				}
 
-				if strings.HasPrefix(path.Base(f), "libcuda-control.so") {
+				if strings.HasPrefix(path.Base(f), "libvgpu.so") {
 					vm.cudaControlFile = f
 				}
 			}
@@ -193,34 +209,27 @@ func (vm *VolumeManager) mirror(vols VolumeMap) error {
 	}
 
 	vCudaFileFn := func(soFile string) error {
-		if err := os.Remove(soFile); err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-		}
+		_ = os.Remove(soFile)
 		if err := clone(vm.cudaControlFile, soFile); err != nil {
 			return err
 		}
-
-		klog.V(2).Infof("Vcuda %s to %s", vm.cudaControlFile, soFile)
-
+		klog.Infof("Vcuda %s to %s", vm.cudaControlFile, soFile)
 		l := strings.TrimRight(soFile, ".0123456789")
-		if err := os.Remove(l); err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-		}
+		_ = os.Remove(l)
 		if err := clone(vm.cudaControlFile, l); err != nil {
 			return err
 		}
 		klog.V(2).Infof("Vcuda %s to %s", vm.cudaControlFile, l)
 		return nil
 	}
-
-	if vm.share && len(vm.cudaControlFile) > 0 {
-		if len(vm.cudaSoname) > 0 {
-			for _, f := range vm.cudaSoname {
+	klog.Infoln("cudaControlFile ", vm.cudaControlFile)
+	klog.Infoln("Share ", vm.Share)
+	klog.Infoln("CudaSoname ", vm.CudaSoname)
+	if vm.Share && len(vm.cudaControlFile) > 0 {
+		if len(vm.CudaSoname) > 0 {
+			for _, f := range vm.CudaSoname {
 				if err := vCudaFileFn(f); err != nil {
+					klog.Errorln(err)
 					return err
 				}
 			}
@@ -229,72 +238,7 @@ func (vm *VolumeManager) mirror(vols VolumeMap) error {
 		if len(vm.mlSoName) > 0 {
 			for _, f := range vm.mlSoName {
 				if err := vCudaFileFn(f); err != nil {
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-// #lizard forgives
-func (vm *VolumeManager) mirrorFiles(driver, vpath string, file string) error {
-	obj, err := elf.Open(file)
-	if err != nil {
-		return fmt.Errorf("%s: %v", file, err)
-	}
-	defer obj.Close()
-
-	ok, err := blacklisted(file, obj)
-	if err != nil {
-		return fmt.Errorf("%s: %v", file, err)
-	}
-
-	if ok {
-		return nil
-	}
-
-	l := path.Join(vpath, path.Base(file))
-	if err := removeFile(l); err != nil {
-		return err
-	}
-
-	if err := clone(file, l); err != nil {
-		return err
-	}
-
-	soname, err := obj.DynString(elf.DT_SONAME)
-	if err != nil {
-		return fmt.Errorf("%s: %v", file, err)
-	}
-
-	if len(soname) > 0 {
-		l = path.Join(vpath, soname[0])
-		if err := linkIfNotSameName(path.Base(file), l); err != nil && !os.IsExist(err) {
-			return err
-		}
-
-		// XXX Many applications (wrongly) assume that libcuda.so exists (e.g. with dlopen)
-		// Hardcode the libcuda symlink for the time being.
-		if strings.Contains(driver, "nvidia") {
-			// Remove libcuda symbol link
-			if vm.share && driver == "nvidia" && strings.HasPrefix(soname[0], "libcuda.so") {
-				os.Remove(l)
-				vm.cudaSoname[l] = l
-			}
-
-			// Remove libnvidia-ml symbol link
-			if vm.share && driver == "nvidia" && strings.HasPrefix(soname[0], "libnvidia-ml.so") {
-				os.Remove(l)
-				vm.mlSoName[l] = l
-			}
-
-			// XXX GLVND requires this symlink for indirect GLX support
-			// It won't be needed once we have an indirect GLX vendor neutral library.
-			if strings.HasPrefix(soname[0], "libGLX_nvidia") {
-				l = strings.Replace(l, "GLX_nvidia", "GLX_indirect", 1)
-				if err := linkIfNotSameName(path.Base(file), l); err != nil && !os.IsExist(err) {
+					klog.Errorln(err)
 					return err
 				}
 			}
@@ -315,41 +259,4 @@ func (v *Volume) exist() (bool, error) {
 
 func (v *Volume) remove() error {
 	return os.RemoveAll(v.Path)
-}
-
-func removeFile(file string) error {
-	if err := os.Remove(file); err != nil {
-		if !os.IsNotExist(err) {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func linkIfNotSameName(src, dst string) error {
-	if path.Base(src) != path.Base(dst) {
-		if err := removeFile(dst); err != nil {
-			if !os.IsNotExist(err) {
-				return err
-			}
-		}
-
-		l := strings.TrimRight(dst, ".0123456789")
-		if err := removeFile(l); err != nil {
-			if !os.IsExist(err) {
-				return err
-			}
-		}
-
-		if err := os.Symlink(src, l); err != nil && !os.IsExist(err) {
-			return err
-		}
-
-		if err := os.Symlink(src, dst); err != nil && !os.IsExist(err) {
-			return err
-		}
-	}
-
-	return nil
 }

@@ -128,7 +128,6 @@ func GetActivePods() map[string]*v1.Pod {
 	}
 
 	activePods := make(map[string]*v1.Pod)
-
 	for _, item := range podCache.podInformer.Informer().GetStore().List() {
 		pod, ok := item.(*v1.Pod)
 		if !ok {
@@ -145,6 +144,5 @@ func GetActivePods() map[string]*v1.Pod {
 
 		activePods[string(pod.UID)] = pod
 	}
-
 	return activePods
 }

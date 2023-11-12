@@ -19,7 +19,7 @@ spec:
 #    - --write-config-to=/tmp/asd.json
     - --config=/etc/kubernetes/scheduler-policy-config.json           # 增加项
     image: registry.k8s.io/kube-scheduler:v1.27.4
-    imagePullPolicy: IfNotPresent
+    imagePullPolicy: Always
     livenessProbe:
       failureThreshold: 8
       httpGet:

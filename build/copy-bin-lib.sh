@@ -3,14 +3,16 @@
 set -o pipefail
 set -o errexit
 set -o nounset
-set -ex
 
 FILE=${FILE:-"/etc/gpu-manager/volume.json"}
+readonly NV_DIR="/etc/gpu-manager/vdriver/nvidia"
+readonly FIND_BASE=${FIND_BASE:-"/usr/local/gpu/"}
+
+mkdir -p $NV_DIR
 LIB_FILES=$(jq -r .volume[0].components.libraries[] ${FILE})
 BIN_FILES=$(jq -r .volume[0].components.binaries[] ${FILE})
-readonly NV_DIR="/usr/local/nvidia"
-#readonly FIND_BASE=${FIND_BASE:-"/usr/local/host"}
-readonly FIND_BASE=${FIND_BASE:-"/usr"}  # 宿主机目录
+mkdir -p /usr/local/gpu/
+cp -rf /usr/bin/gpu-client /usr/local/gpu/
 
 function check_arch() {
   local readonly lib=$1
@@ -63,14 +65,14 @@ done
   cd ${NV_DIR}/lib
   rm -rf libvdpau_nvidia.so
   rel_path=$(readlink -f libvdpau_nvidia.so.1)
-  ln -s $(basename ${rel_path}) libvdpau_nvidia.so
+  ln -s  ${rel_path} libvdpau_nvidia.so
 )
 
 (
   cd ${NV_DIR}/lib64
   rm -rf libvdpau_nvidia.so
   rel_path=$(readlink -f libvdpau_nvidia.so.1)
-  ln -s $(basename ${rel_path}) libvdpau_nvidia.so
+  ln -s ${rel_path} libvdpau_nvidia.so
 )
 
 # fix libnvidia-ml.so
@@ -78,12 +80,12 @@ done
   cd ${NV_DIR}/lib
   rm -rf libnvidia-ml.so
   rel_path=$(readlink -f libnvidia-ml.so.1)
-  ln -s $(basename ${rel_path}) libnvidia-ml.so
+  ln -s ${rel_path} libnvidia-ml.so
 )
 
 (
   cd ${NV_DIR}/lib64
   rm -rf libnvidia-ml.so
   rel_path=$(readlink -f libnvidia-ml.so.1)
-  ln -s $(basename ${rel_path}) libnvidia-ml.so
+  ln -s ${rel_path} libnvidia-ml.so
 )

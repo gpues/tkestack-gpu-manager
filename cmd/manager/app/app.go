@@ -82,6 +82,10 @@ func Run(opt *options.Options) error {
 	srv := server.NewManager(cfg)
 	go srv.Run()
 
+	if err := srv.RegisterToKubelet(); err != nil {
+		return err
+	}
+
 	waitTimer := time.NewTimer(opt.WaitTimeout)
 	for !srv.Ready() {
 		select {
@@ -94,10 +98,6 @@ func Run(opt *options.Options) error {
 		time.Sleep(time.Second)
 	}
 	waitTimer.Stop()
-
-	if err := srv.RegisterToKubelet(); err != nil {
-		return err
-	}
 
 	devicePluginSocket := filepath.Join(cfg.DevicePluginPath, types.KubeletSocket)
 	watcher, err := utils.NewFSWatcher(cfg.DevicePluginPath)

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cupy
+  labels:
+    app: cupy
+spec:
+  containers:
+    - name: c
+      image: ccr.ccs.tencentyun.com/menghe/tensorflow-gputest:0.2
+      resources:
+        requests:
+          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-memory: "20"
+        limits:
+          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-memory: "20"
+      command:
+        - "/bin/bash"
+        - "-c"
+        - "/bin/sleep 1d"
+  restartPolicy: Always
+
+# # 给宿主机增加nvidia-uvm设备
+#sudo /sbin/modprobe nvidia-uvm
+#D=`grep nvidia-uvm /proc/devices | awk '{print $1}'`
+#sudo mknod -m 666 /dev/nvidia-uvm c $D 0
+
+
+# cd /data/tensorflow/cifar10 && time python cifar10_train.py
+
+
+

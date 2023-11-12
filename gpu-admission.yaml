@@ -1,3 +1,44 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: gpu-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: gpu-manager
+    namespace: kube-system
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gpu-manager
+  namespace: kube-system
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gpu-manager-metric
+  namespace: kube-system
+  annotations:
+    prometheus.io/scrape: "true"
+  labels:
+    kubernetes.io/cluster-service: "true"
+spec:
+  clusterIP: None
+  ports:
+    - name: metrics
+      port: 5678
+      protocol: TCP
+      targetPort: 5678
+  selector:
+    name: gpu-manager-ds
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -59,9 +100,9 @@ spec:
             - name: LOG_LEVEL
               value: "4"
             - name: EXTRA_FLAGS
-              value: --incluster-mode=true
+              value: ""
           image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-admission:v1.1.5
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: gpu-quota-admission
           ports:
             - containerPort: 3456
@@ -83,7 +124,7 @@ spec:
             - -c
             - ' mkdir -p /etc/kubernetes/ && cp /root/gpu-quota-admission/gpu-quota-admission.config
           /etc/kubernetes/'
-          image: busybox
+          image: registry.cn-hangzhou.aliyuncs.com/acejilam/centos:7
           imagePullPolicy: Always
           name: init-kube-config
           securityContext:

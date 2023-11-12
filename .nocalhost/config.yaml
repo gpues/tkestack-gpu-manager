@@ -1,0 +1,62 @@
+name: gpu-manager-daemonset
+serviceType: daemonset
+containers:
+    - name: gpu-manager
+      dev:
+        image: registry.cn-hangzhou.aliyuncs.com/acejilam/mygo:1.21
+        shell: bash
+        workDir: /xxxxx
+        resources:
+            limits:
+                memory: 4Gi
+                cpu: "4"
+            requests:
+                memory: 4Gi
+                cpu: "4"
+        command:
+            run:
+                - /usr/local/go1.20/bin/go
+                - build
+                - -o
+                - gpu-manager
+                - ./cmd/manager
+            debug:
+                - /usr/local/go1.20/bin/go
+                - build
+                - -o
+                - gpu-manager
+                - ./cmd/manager
+                - '&&'
+                - /usr/local/go1.20/bin/dlv
+                - --listen=:2345
+                - --headless=true
+                - --api-version=2
+                - --accept-multiclient
+                - exec
+                - gpu-manager
+                - --
+                - --share-mode=true
+                - --volume-config=/etc/gpu-manager/volume.json
+                - --extra-config=/etc/gpu-manager/extra-config.json
+                - --log-dir=/var/log/gpu-manager
+                - --query-addr=0.0.0.0
+                - --container-runtime-endpoint
+                - --logtostderr
+        debug:
+            remoteDebugPort: 2345
+            language: go
+        hotReload: true
+        sync:
+            type: send
+            mode: gitIgnore
+            deleteProtection: true
+            filePattern: []
+            ignoreFilePattern: []
+        env:
+            - name: GOPROXY
+              value: https://goproxy.cn/,direct
+            - name: GO111MODULE
+              value: "on"
+        portForward:
+            - 2345:2345
+
