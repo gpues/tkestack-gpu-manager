@@ -810,7 +810,6 @@ func (ta *NvidiaTopoAllocator) PreStartContainer(ctx context.Context, req *plugi
 		containerName string
 		vcore         int64
 		vmemory       int64
-		//devices       []string
 	)
 
 	// try to get podUID, containerName, vcore and vmemory from kubelet deviceplugin checkpoint file

@@ -204,8 +204,6 @@ func (vm *VirtualManager) vDeviceWatcher(registered chan struct{}) {
 
 	activePods := watchdog.GetActivePods()
 	possibleActiveVm := vm.responseManager.ListAll()
-	fmt.Println(activePods)
-	fmt.Println(possibleActiveVm)
 	for uid, containerMapping := range possibleActiveVm {
 		_, ok := activePods[uid]
 		if !ok {

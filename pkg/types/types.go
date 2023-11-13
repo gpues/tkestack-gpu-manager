@@ -119,5 +119,12 @@ const (
 	PodNamespaceLabelKey  = "io.kubernetes.pod.namespace"
 	PodNameLabelKey       = "io.kubernetes.pod.name"
 	PodUIDLabelKey        = "io.kubernetes.pod.uid"
-	PodCgroupNamePrefix   = "pod"
+	PodCgroupNamePrefix   = "kubepods"
+)
+
+const (
+	FILE       = "/etc/gpu-manager/volume.json"
+	NvDir      = "/etc/gpu-manager/vdriver/nvidia"
+	FindBase   = "/usr/local/gpu/"
+	ControlLib = "/usr/local/gpu/libvgpu.so"
 )

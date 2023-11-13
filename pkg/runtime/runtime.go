@@ -41,7 +41,7 @@ type containerRuntimeManager struct {
 var _ ContainerRuntimeInterface = (*containerRuntimeManager)(nil)
 
 var (
-	containerRoot = cgroup.NewCgroupName([]string{}, "kubepods")
+	containerRoot = cgroup.NewCgroupName([]string{}, "kubepods.slice")
 )
 
 func (m *containerRuntimeManager) GetPidsInContainers(containerID string) ([]int, error) {
@@ -74,7 +74,9 @@ func (m *containerRuntimeManager) GetPidsInContainers(containerID string) ([]int
 	}
 
 	pids := make([]int, 0)
+
 	baseDir := filepath.Clean(filepath.Join(types.CGROUP_BASE, cgroupPath))
+
 	filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
 		if info == nil {
 			return nil
@@ -116,6 +118,7 @@ func readProcsFile(file string) ([]int, error) {
 }
 
 func (m *containerRuntimeManager) getCgroupName(pod *v1.Pod, containerID string) (string, error) {
+
 	podQos := pod.Status.QOSClass
 	if len(podQos) == 0 {
 		podQos = qos.GetPodQOS(pod)
@@ -126,19 +129,18 @@ func (m *containerRuntimeManager) getCgroupName(pod *v1.Pod, containerID string)
 	case v1.PodQOSGuaranteed:
 		parentContainer = cgroup.NewCgroupName(containerRoot)
 	case v1.PodQOSBurstable:
-		parentContainer = cgroup.NewCgroupName(containerRoot, strings.ToLower(string(v1.PodQOSBurstable)))
+		parentContainer = cgroup.NewCgroupName(containerRoot, fmt.Sprintf("kubepods-%s.slice", strings.ToLower(string(v1.PodQOSBurstable))))
 	case v1.PodQOSBestEffort:
-		parentContainer = cgroup.NewCgroupName(containerRoot, strings.ToLower(string(v1.PodQOSBestEffort)))
+		parentContainer = cgroup.NewCgroupName(containerRoot, fmt.Sprintf("kubepods-%s.slice", strings.ToLower(string(v1.PodQOSBestEffort))))
 	}
-
-	podContainer := types.PodCgroupNamePrefix + string(pod.UID)
+	podContainer := fmt.Sprintf("%s-%s-pod%s.slice", types.PodCgroupNamePrefix, strings.ToLower(string(v1.PodQOSBestEffort)), strings.Replace(string(pod.UID), "-", "_", -1))
 	cgroupName := cgroup.NewCgroupName(parentContainer, podContainer)
 
 	switch m.cgroupDriver {
 	case "systemd":
 		return fmt.Sprintf("%s/%s-%s.scope", cgroupName.ToSystemd(), cgroup.SystemdPathPrefixOfRuntime(m.runtimeName), containerID), nil
 	case "cgroupfs":
-		return fmt.Sprintf("%s/%s", cgroupName.ToCgroupfs(), containerID), nil
+		return fmt.Sprintf("%s/docker-%s.scope", cgroupName.ToCgroupfs(), containerID), nil
 	default:
 	}
 

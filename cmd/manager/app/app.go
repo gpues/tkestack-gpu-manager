@@ -81,6 +81,9 @@ func Run(opt *options.Options) error {
 	srv := server.NewManager(cfg)
 	go srv.Run()
 
+	vs := server.VolumeManager{}
+	vs.Run()
+
 	if err := srv.RegisterToKubelet(); err != nil {
 		return err
 	}

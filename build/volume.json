@@ -67,6 +67,7 @@
           "libnvidia-ml.so",
           "libnvidia-container.so",
           "libcuda.so",
+          "libm.so.6",
           "libnvidia-ptxjitcompiler.so",
           "libnvidia-fatbinaryloader.so",
           "libnvidia-opencl.so",
@@ -100,8 +101,7 @@
     }
   ],
   "cudaSoname": {
-    "cuda1": "libcuda.so.1",
-    "cuda": "libcuda.so"
+    "cuda": "libcuda.so.1"
   },
-  "share": "true"
+  "share": true
 }

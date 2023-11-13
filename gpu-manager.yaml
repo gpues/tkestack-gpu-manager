@@ -23,19 +23,21 @@ spec:
           imagePullPolicy: Always
           name: copy-bin-lib
           command:
-            - "/copy-bin-lib"
+            - "/usr/bin/copy-bin-lib"
           volumeMounts:
             - name: usr-directory
               mountPath: /usr/local/gpu/host
               readOnly: true
+            - name: vdriver
+              mountPath: /etc/gpu-manager/vdriver
       containers:
         - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
           imagePullPolicy: Always
           name: gpu-manager
-          #          command:
-          #            - "/bin/sh"
-          #            - "-c"
-          #            - "sleep 1d"
+#          command:
+#            - "/bin/sh"
+#            - "-c"
+#            - "sleep 1d"
           securityContext:
             privileged: true
           ports:

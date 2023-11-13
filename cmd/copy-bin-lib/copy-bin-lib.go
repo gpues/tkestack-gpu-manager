@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"io"
 	"k8s.io/klog"
 	"log"
@@ -11,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"tkestack.io/gpu-manager/pkg/server"
+	"tkestack.io/gpu-manager/pkg/types"
 )
 
 func ReadReallyFile(filePath string) string {
@@ -29,40 +30,30 @@ func ReadReallyFile(filePath string) string {
 	return filePath
 }
 
-const (
-	FILE       = "/etc/gpu-manager/volume.json"
-	NvDir      = "/etc/gpu-manager/vdriver/nvidia"
-	FindBase   = "/usr/local/gpu/"
-	controlLib = "/usr/local/gpu/libvgpu.so"
-)
-
 func main() {
-	_ = os.RemoveAll(NvDir)
-	_ = os.MkdirAll(NvDir, os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(NvDir, "lib"), os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(NvDir, "lib64"), os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(NvDir, "bin"), os.ModeDir)
-	copyFileWithModeAndOwnership(controlLib, filepath.Join(NvDir, "lib64", filepath.Base(controlLib)))
-	file, err := os.ReadFile(FILE)
-	if err != nil {
-		klog.Fatalln(err)
-	}
+	_ = os.RemoveAll(types.NvDir)
+	_ = os.MkdirAll(types.NvDir, os.ModeDir)
+	_ = os.MkdirAll(filepath.Join(types.NvDir, "lib"), os.ModeDir)
+	_ = os.MkdirAll(filepath.Join(types.NvDir, "lib64"), os.ModeDir)
+	_ = os.MkdirAll(filepath.Join(types.NvDir, "bin"), os.ModeDir)
+	copyFileWithModeAndOwnership(types.ControlLib, filepath.Join(types.NvDir, "lib64", filepath.Base(types.ControlLib)))
 
-	vs := VolumeManager{}
-	_ = json.Unmarshal(file, &vs)
+	vs := server.VolumeManager{}
+	vs.Run()
+	vs.Copy()
 
 	for _, v := range vs.Config {
 		if v.Name != "nvidia" {
 			continue
 		}
 		for _, lib := range v.Components["libraries"] {
-			reallyFiles := SearchFile(FindBase, lib+"*", "stubs")
+			reallyFiles := SearchFile(types.FindBase, lib+"*", "stubs")
 			for linkFile, reallyFile := range reallyFiles {
 				if linkFile != reallyFile {
 					continue
 				}
 				arch := GetArchFromPath(reallyFile)
-				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(filepath.Join(NvDir, "lib")+arch, filepath.Base(linkFile)))
+				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(filepath.Join(types.NvDir, "lib")+arch, filepath.Base(linkFile)))
 				if err != nil {
 					klog.Fatalln(err)
 				}
@@ -73,15 +64,15 @@ func main() {
 				}
 				arch := GetArchFromPath(reallyFile)
 				//reallyPath := filepath.Join(filepath.Join(NvDir, "lib")+arch, filepath.Base(reallyFile))
-				targetLinkPath := filepath.Join(filepath.Join(NvDir, "lib")+arch, filepath.Base(linkFile))
+				targetLinkPath := filepath.Join(filepath.Join(types.NvDir, "lib")+arch, filepath.Base(linkFile))
 				_ = os.Remove(targetLinkPath)
-				GenLink(filepath.Base(reallyFile), filepath.Base(linkFile), filepath.Join(NvDir, "lib")+arch)
+				server.GenLink(filepath.Base(reallyFile), filepath.Base(linkFile), filepath.Join(types.NvDir, "lib")+arch)
 			}
 		}
 		for _, bin := range v.Components["binaries"] {
-			reallyFiles := SearchFile(FindBase, bin, "")
+			reallyFiles := SearchFile(types.FindBase, bin, "")
 			for linkFile, reallyFile := range reallyFiles {
-				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(NvDir, "bin", filepath.Base(linkFile)))
+				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(types.NvDir, "bin", filepath.Base(linkFile)))
 				if err != nil {
 					klog.Fatalln(err)
 				}
@@ -119,17 +110,6 @@ func SearchFile(root string, searchPattern string, skipPattern string) map[strin
 		log.Println("Error:", err)
 	}
 	return reallyFiles
-}
-func GenLink(source, target, pwd string) {
-	klog.Infoln("gen link", source, "->", target)
-	cmd := exec.Command("ln", "-s", source, target) // 你可以替换成你想要执行的命令和参数
-	cmd.Dir = pwd
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		klog.Fatalln(err, out.String())
-	}
 }
 
 func GetArchFromPath(libPath string) string {
