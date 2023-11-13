@@ -15,16 +15,16 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package volume
+package main
 
 import (
-	"encoding/json"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"tkestack.io/gpu-manager/pkg/services/volume"
 	"tkestack.io/gpu-manager/pkg/services/volume/ldcache"
 	"tkestack.io/gpu-manager/pkg/types"
 
@@ -36,9 +36,9 @@ type VolumeManager struct {
 	Config          []Config `json:"volume,omitempty"`
 	cfgPath         string
 	cudaControlFile string
-	CudaSoname      map[string]string `json:"CudaSoname"`
-	mlSoName        map[string]string
-	Share           bool `json:"Share"`
+	CudaSoname      map[string]string `json:"cudaSoname"`
+	MlSoName        map[string]string `json:"mlSoName"`
+	share           bool
 }
 
 type components map[string][]string
@@ -56,12 +56,6 @@ const (
 	lib32Dir = "lib"
 	lib64Dir = "lib64"
 )
-const (
-	FILE       = "/etc/gpu-manager/volume.json"
-	NvDir      = "/etc/gpu-manager/vdriver/nvidia"
-	FindBase   = "/usr/local/gpu/"
-	controlLib = "/usr/local/gpu/libvgpu.so"
-)
 
 type volumeDir struct {
 	name  string
@@ -76,29 +70,6 @@ type Volume struct {
 
 // VolumeMap stores Volume for each type
 type VolumeMap map[string]*Volume
-
-// NewVolumeManager returns a new VolumeManager
-func NewVolumeManager(config string, share bool) (*VolumeManager, error) {
-	f, err := os.Open(config)
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	volumeManager := &VolumeManager{
-		cfgPath:    filepath.Dir(config),
-		CudaSoname: make(map[string]string),
-		mlSoName:   make(map[string]string),
-		Share:      share,
-	}
-
-	if err := json.NewDecoder(f).Decode(volumeManager); err != nil {
-		return nil, err
-	}
-
-	return volumeManager, nil
-}
 
 // Run starts a VolumeManager
 func (vm *VolumeManager) Run() (err error) {
@@ -128,7 +99,7 @@ func (vm *VolumeManager) Run() (err error) {
 		for t, c := range cfg.Components {
 			switch t {
 			case "binaries":
-				bins, err := which(c...)
+				bins, err := volume.Which(c...)
 				if err != nil {
 					return err
 				}
@@ -209,23 +180,17 @@ func (vm *VolumeManager) mirror(vols VolumeMap) error {
 	}
 
 	vCudaFileFn := func(soFile string) error {
-		_ = os.Remove(soFile)
-		if err := clone(vm.cudaControlFile, soFile); err != nil {
+		l := filepath.Join(filepath.Dir(vm.cudaControlFile), soFile)
+		if err := volume.Clone(vm.cudaControlFile, l); err != nil {
 			return err
 		}
-		klog.Infof("Vcuda %s to %s", vm.cudaControlFile, soFile)
-		l := strings.TrimRight(soFile, ".0123456789")
-		_ = os.Remove(l)
-		if err := clone(vm.cudaControlFile, l); err != nil {
-			return err
-		}
-		klog.V(2).Infof("Vcuda %s to %s", vm.cudaControlFile, l)
+		klog.Infof("Vcuda %s to %s", vm.cudaControlFile, l)
 		return nil
 	}
 	klog.Infoln("cudaControlFile ", vm.cudaControlFile)
-	klog.Infoln("Share ", vm.Share)
+	klog.Infoln("share ", vm.share)
 	klog.Infoln("CudaSoname ", vm.CudaSoname)
-	if vm.Share && len(vm.cudaControlFile) > 0 {
+	if vm.share && len(vm.cudaControlFile) > 0 {
 		if len(vm.CudaSoname) > 0 {
 			for _, f := range vm.CudaSoname {
 				if err := vCudaFileFn(f); err != nil {
@@ -235,8 +200,8 @@ func (vm *VolumeManager) mirror(vols VolumeMap) error {
 			}
 		}
 
-		if len(vm.mlSoName) > 0 {
-			for _, f := range vm.mlSoName {
+		if len(vm.MlSoName) > 0 {
+			for _, f := range vm.MlSoName {
 				if err := vCudaFileFn(f); err != nil {
 					klog.Errorln(err)
 					return err

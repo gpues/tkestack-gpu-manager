@@ -1,4 +1,3 @@
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -12,35 +11,31 @@ spec:
       name: gpu-manager-ds
   template:
     metadata:
-      # This annotation is deprecated. Kept here for backward compatibility
-      # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
       labels:
         name: gpu-manager-ds
     spec:
       serviceAccountName: gpu-manager
-      tolerations:
-        # This toleration is deprecated. Kept here for backward compatibility
-        # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - key: tencent.com/vcuda-core
-          operator: Exists
-          effect: NoSchedule
-      # Mark this pod as a critical add-on; when enabled, the critical add-on
-      # scheduler reserves resources for critical add-on pods so that they can
-      # be rescheduled after a failure.
-      # See https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/
       priorityClassName: "system-node-critical"
       # only run node has gpu device
       hostPID: true
+      initContainers:
+        - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
+          imagePullPolicy: Always
+          name: copy-bin-lib
+          command:
+            - "/copy-bin-lib"
+          volumeMounts:
+            - name: usr-directory
+              mountPath: /usr/local/gpu/host
+              readOnly: true
       containers:
         - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
           imagePullPolicy: Always
           name: gpu-manager
-#          command:
-#            - "/bin/sh"
-#            - "-c"
-#            - "sleep 1d"
+          #          command:
+          #            - "/bin/sh"
+          #            - "-c"
+          #            - "sleep 1d"
           securityContext:
             privileged: true
           ports:
@@ -73,7 +68,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-
       volumes:
         - name: device-plugin
           hostPath:
@@ -111,4 +105,3 @@ spec:
           hostPath:
             type: Directory
             path: /usr
----

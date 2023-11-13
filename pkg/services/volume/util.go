@@ -31,10 +31,10 @@ import (
 	"strings"
 )
 
-func which(bins ...string) ([]string, error) {
+func Which(bins ...string) ([]string, error) {
 	paths := make([]string, 0, len(bins))
 
-	out, _ := exec.Command("which", bins...).Output()
+	out, _ := exec.Command("Which", bins...).Output()
 	r := bufio.NewReader(bytes.NewBuffer(out))
 	for {
 		p, err := r.ReadString('\n')
@@ -56,7 +56,7 @@ func which(bins ...string) ([]string, error) {
 	return paths, nil
 }
 
-func clone(src, dst string) error {
+func Clone(src, dst string) error {
 	// Prefer hard link, fallback to copy
 	err := os.Link(src, dst)
 	if err != nil {

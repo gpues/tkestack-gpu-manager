@@ -42,7 +42,6 @@ import (
 	_ "tkestack.io/gpu-manager/pkg/services/allocator/register"
 	"tkestack.io/gpu-manager/pkg/services/display"
 	"tkestack.io/gpu-manager/pkg/services/virtual-manager"
-	"tkestack.io/gpu-manager/pkg/services/volume"
 	"tkestack.io/gpu-manager/pkg/services/watchdog"
 	"tkestack.io/gpu-manager/pkg/types"
 	"tkestack.io/gpu-manager/pkg/utils"
@@ -108,19 +107,6 @@ func (m *managerImpl) Run() error {
 
 	if m.config.Driver == "" {
 		return fmt.Errorf("you should define a driver")
-	}
-
-	if len(m.config.VolumeConfigPath) > 0 {
-		volumeManager, err := volume.NewVolumeManager(m.config.VolumeConfigPath, m.config.EnableShare)
-		if err != nil {
-			klog.Errorf("Can not create volume managerImpl, err %s", err)
-			return err
-		}
-
-		if err := volumeManager.Run(); err != nil {
-			klog.Errorf("Can not start volume managerImpl, err %s", err)
-			return err
-		}
 	}
 
 	//sent, err := systemd.SdNotify(true, "READY=1\n")

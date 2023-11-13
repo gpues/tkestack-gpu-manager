@@ -136,7 +136,6 @@ func TestServer(t *testing.T) {
 		VCudaRequestsQueue:    make(chan *types.VCudaRequest, 10),
 		DevicePluginPath:      opt.DevicePluginPath,
 		VirtualManagerPath:    opt.VirtualManagerPath,
-		VolumeConfigPath:      opt.VolumeConfigPath,
 		EnableShare:           opt.EnableShare,
 		Hostname:              opt.HostnameOverride,
 		AllocationCheckPeriod: 5 * time.Second,

@@ -24,7 +24,7 @@ run:
 #  @revive -config revive.toml -exclude vendor/... -exclude pkg/api/runtime/... ./...
 
 multi_arch:
-	docker buildx build -f Dockerfile --no-cache=true --pull=false --platform=linux/amd64,linux/arm64 -t registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 . --push
+	docker buildx build -f Dockerfile --no-cache=false --pull=false --platform=linux/amd64,linux/arm64 -t registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 . --push
 
 
 push:

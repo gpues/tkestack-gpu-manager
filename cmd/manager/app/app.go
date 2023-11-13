@@ -46,7 +46,6 @@ func Run(opt *options.Options) error {
 		VCudaRequestsQueue:       make(chan *types.VCudaRequest, 10),
 		DevicePluginPath:         pluginapi.DevicePluginPath,
 		VirtualManagerPath:       opt.VirtualManagerPath,
-		VolumeConfigPath:         opt.VolumeConfigPath,
 		EnableShare:              opt.EnableShare,
 		AllocationCheckPeriod:    time.Duration(opt.AllocationCheckPeriod) * time.Second,
 		CheckpointPath:           opt.CheckpointPath,

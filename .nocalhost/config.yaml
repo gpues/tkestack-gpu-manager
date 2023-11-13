@@ -36,7 +36,6 @@ containers:
                 - gpu-manager
                 - --
                 - --share-mode=true
-                - --volume-config=/etc/gpu-manager/volume.json
                 - --extra-config=/etc/gpu-manager/extra-config.json
                 - --log-dir=/var/log/gpu-manager
                 - --query-addr=0.0.0.0

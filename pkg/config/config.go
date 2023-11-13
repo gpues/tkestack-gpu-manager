@@ -35,15 +35,13 @@ type Config struct {
 	NodeLabels               map[string]string
 	VirtualManagerPath       string
 	DevicePluginPath         string
-	VolumeConfigPath         string
 	EnableShare              bool
 	AllocationCheckPeriod    time.Duration
 	CheckpointPath           string
 	ContainerRuntimeEndpoint string
 	CgroupDriver             string
 	RequestTimeout           time.Duration
-
-	VCudaRequestsQueue chan *types.VCudaRequest
+	VCudaRequestsQueue       chan *types.VCudaRequest
 }
 
 // ExtraConfig contains extra options other than Config

@@ -99,9 +99,9 @@
       }
     }
   ],
-  "share": true,
   "cudaSoname": {
     "cuda1": "libcuda.so.1",
     "cuda": "libcuda.so"
-  }
+  },
+  "share": "true"
 }

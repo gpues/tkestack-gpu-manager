@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
-	"tkestack.io/gpu-manager/pkg/services/volume"
 )
 
 func ReadReallyFile(filePath string) string {
@@ -49,7 +48,7 @@ func main() {
 		klog.Fatalln(err)
 	}
 
-	vs := volume.VolumeManager{}
+	vs := VolumeManager{}
 	_ = json.Unmarshal(file, &vs)
 
 	for _, v := range vs.Config {
@@ -89,6 +88,8 @@ func main() {
 			}
 		}
 	}
+
+	vs.Run()
 }
 
 func SearchFile(root string, searchPattern string, skipPattern string) map[string]string {

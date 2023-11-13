@@ -36,22 +36,21 @@ const (
 
 // Options contains plugin information
 type Options struct {
-	Driver                   string
+	Driver                   string // nvidia
 	ExtraPath                string
-	VolumeConfigPath         string
-	QueryPort                int
-	QueryAddr                string
-	KubeConfigFile           string
-	SamplePeriod             int
+	QueryPort                int    // 5678
+	QueryAddr                string // 0.0.0.0
+	KubeConfigFile           string // ''
+	SamplePeriod             int    // 1
 	NodeLabels               string
-	HostnameOverride         string
-	VirtualManagerPath       string
-	DevicePluginPath         string
+	HostnameOverride         string // vm
+	VirtualManagerPath       string // /etc/gpu-manager/vm
+	DevicePluginPath         string // /var/lib/kubelet/device-plugins
 	EnableShare              bool
-	AllocationCheckPeriod    int
-	CheckpointPath           string
-	ContainerRuntimeEndpoint string
-	CgroupDriver             string
+	AllocationCheckPeriod    int    // 30
+	CheckpointPath           string // /etc/gpu-manager/checkpoint
+	ContainerRuntimeEndpoint string // /var/run/dockershim.sock
+	CgroupDriver             string // cgroupfs
 	RequestTimeout           time.Duration
 	WaitTimeout              time.Duration
 }
@@ -61,7 +60,7 @@ func NewOptions() *Options {
 	return &Options{
 		Driver:                   DefaultDriver,
 		QueryPort:                DefaultQueryPort,
-		QueryAddr:                "localhost",
+		QueryAddr:                "0.0.0.0",
 		SamplePeriod:             DefaultSamplePeriod,
 		VirtualManagerPath:       DefaultVirtualManagerPath,
 		AllocationCheckPeriod:    DefaultAllocationCheckPeriod,
@@ -77,7 +76,6 @@ func NewOptions() *Options {
 func (opt *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&opt.Driver, "driver", opt.Driver, "The driver name for manager")
 	fs.StringVar(&opt.ExtraPath, "extra-config", opt.ExtraPath, "The extra config file location")
-	fs.StringVar(&opt.VolumeConfigPath, "volume-config", opt.VolumeConfigPath, "The volume config file location")
 	fs.IntVar(&opt.QueryPort, "query-port", opt.QueryPort, "port for query statistics information")
 	fs.StringVar(&opt.QueryAddr, "query-addr", opt.QueryAddr, "address for query statistics information")
 	fs.StringVar(&opt.KubeConfigFile, "kubeconfig", opt.KubeConfigFile, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
