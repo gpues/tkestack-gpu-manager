@@ -880,8 +880,7 @@ func (ta *NvidiaTopoAllocator) PreStartContainer(ctx context.Context, req *plugi
 		resChan: make(chan struct{}),
 	}
 	ta.queue.AddRateLimited(ar)
-	<-ar.resChan
-
+	klog.Infoln("ar.resChan", <-ar.resChan)
 	return &pluginapi.PreStartContainerResponse{}, nil
 }
 

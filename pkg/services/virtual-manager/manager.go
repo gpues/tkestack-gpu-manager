@@ -200,11 +200,12 @@ func (vm *VirtualManager) Run() {
 }
 
 func (vm *VirtualManager) vDeviceWatcher(registered chan struct{}) {
-	klog.V(2).Infof("Start vDevice watcher")
+	klog.Infof("Start vDevice watcher")
 
 	activePods := watchdog.GetActivePods()
 	possibleActiveVm := vm.responseManager.ListAll()
-
+	fmt.Println(activePods)
+	fmt.Println(possibleActiveVm)
 	for uid, containerMapping := range possibleActiveVm {
 		_, ok := activePods[uid]
 		if !ok {
@@ -586,6 +587,7 @@ func (vm *VirtualManager) RegisterVDevice(_ context.Context, req *vcudaapi.VDevi
 	return vm.registerVDeviceWithContainerId(podUID, contID)
 }
 func runVDeviceServer(dir string, handler vcudaapi.VCUDAServiceServer) *grpc.Server {
+	klog.Infoln("runVDeviceServer", dir)
 	socketFile := filepath.Join(dir, types.VDeviceSocket)
 	err := syscall.Unlink(socketFile)
 	if err != nil && !os.IsNotExist(err) {
@@ -622,6 +624,7 @@ func runVDeviceServer(dir string, handler vcudaapi.VCUDAServiceServer) *grpc.Ser
 		klog.Errorf("start vDevice server failed, error %s", err)
 		return nil
 	default:
+		klog.Infoln("runVDeviceServer starting", dir)
 	}
 
 	return srv

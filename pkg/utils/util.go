@@ -199,24 +199,22 @@ func IsGPURequiredPod(pod *v1.Pod) bool {
 
 	// Check if pod request for GPU resource
 	if vcore <= 0 || (vcore < nvtree.HundredCore && vmemory <= 0) {
-		klog.V(4).Infof("Pod %s in namespace %s does not Request for GPU resource", pod.Name, pod.Namespace)
 		return false
 	}
+	klog.V(4).Infof("Pod %s in namespace %s does Request for GPU resource", pod.Name, pod.Namespace)
 
 	return true
 }
 
 func IsGPURequiredContainer(c *v1.Container) bool {
-	klog.V(4).Infof("Determine if the container %s needs GPU resource", c.Name)
-
 	vcore := GetGPUResourceOfContainer(c, types.VCoreAnnotation)
 	vmemory := GetGPUResourceOfContainer(c, types.VMemoryAnnotation)
 
 	// Check if container request for GPU resource
 	if vcore <= 0 || (vcore < nvtree.HundredCore && vmemory <= 0) {
-		klog.V(4).Infof("Container %s does not Request for GPU resource", c.Name)
 		return false
 	}
+	klog.V(4).Infof("Container %s does Request for GPU resource", c.Name)
 
 	return true
 }
@@ -251,12 +249,12 @@ func IsGPUPredicatedPod(pod *v1.Pod) (predicated bool) {
 
 	// Check if pod request for GPU resource
 	if GetGPUResourceOfPod(pod, types.VCoreAnnotation) <= 0 || GetGPUResourceOfPod(pod, types.VMemoryAnnotation) <= 0 {
-		klog.V(4).Infof("Pod %s in namespace %s does not Request for GPU resource",
-			pod.Name,
-			pod.Namespace)
+
 		return predicated
 	}
-
+	klog.V(4).Infof("Pod %s in namespace %s does Request for GPU resource",
+		pod.Name,
+		pod.Namespace)
 	// Check if pod already has predicate time
 	if _, ok = pod.ObjectMeta.Annotations[types.PredicateTimeAnnotation]; !ok {
 		klog.V(4).Infof("No predicate time for pod %s in namespace %s",
