@@ -4,7 +4,10 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
+cp /usr/local/vgpu/libvgpu.so /usr/local/vgpu/host/libvgpu.so
+cp /usr/local/vgpu/ld.so.preload /usr/local/vgpu/host/ld.so.preload
 
+/usr/bin/copy-bin-lib
 
 /usr/sbin/ldconfig
 
@@ -15,7 +18,7 @@ set -o nounset
 --extra-config=/etc/gpu-manager/extra-config.json \
 --log-dir=/var/log/gpu-manager ${EXTRA_FLAGS:-""}
 
-# 宿主机目录 /usr/ -> 宿主机目录 /usr/local/gpu/host
+# 宿主机目录 /usr/ -> 宿主机目录 /usr/local/host
 
 # -v /sys/fs/cgroup:/sys/fs/cgroup
 # -v /usr:/usr/local/host:

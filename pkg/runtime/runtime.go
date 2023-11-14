@@ -12,7 +12,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
-	criapi "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
+	criapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"k8s.io/klog"
 	"k8s.io/kubectl/pkg/util/qos"
 
@@ -182,12 +182,12 @@ func NewContainerRuntimeManager(cgroupDriver, endpoint string, requestTimeout ti
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.requestTimeout)
 	defer cancel()
-	resp, err := client.Version(ctx, &criapi.VersionRequest{Version: "0.1.0"})
+	resp, err := client.Version(ctx, &criapi.VersionRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	klog.V(2).Infof("Container runtime is %s", resp.RuntimeName)
+	klog.V(2).Infof("Container runtime info %s", resp)
 	m.runtimeName = resp.RuntimeName
 
 	return m, nil

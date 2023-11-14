@@ -35,7 +35,6 @@ import (
 	pluginapi "k8s.io/kubelet/pkg/apis/deviceplugin/v1beta1"
 )
 
-// #lizard forgives
 func Run(opt *options.Options) error {
 	cfg := &config.Config{
 		Driver:                   opt.Driver,
@@ -80,9 +79,10 @@ func Run(opt *options.Options) error {
 
 	srv := server.NewManager(cfg)
 	go srv.Run()
+	time.Sleep(time.Second * 3)
 
 	vs := server.VolumeManager{}
-	vs.Run()
+	_ = vs.Init()
 
 	if err := srv.RegisterToKubelet(); err != nil {
 		return err

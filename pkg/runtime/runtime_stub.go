@@ -1,7 +1,7 @@
 package runtime
 
 import (
-	criapi "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
+	criapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 )
 
 type containerRuntimeManagerStub struct {

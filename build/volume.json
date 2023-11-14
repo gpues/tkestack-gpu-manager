@@ -15,11 +15,10 @@
         ],
         "libraries": [
           "libnvidia-ml.so",
-          "libvgpu.so",
           "libnvidia-container.so",
-          "libm.so.6",
+          "libm.so",
+          "libdl.so",
           "libcuda.so",
-          "libvgpu.so",
           "libnvidia-ptxjitcompiler.so",
           "libnvidia-fatbinaryloader.so",
           "libnvidia-opencl.so",
@@ -67,7 +66,8 @@
           "libnvidia-ml.so",
           "libnvidia-container.so",
           "libcuda.so",
-          "libm.so.6",
+          "libm.so",
+          "libdl.so",
           "libnvidia-ptxjitcompiler.so",
           "libnvidia-fatbinaryloader.so",
           "libnvidia-opencl.so",
@@ -94,8 +94,7 @@
           "libnvidia-tls.so",
           "libnvidia-glsi.so",
           "libnvidia-opticalflow.so",
-          "libGLX_indirect.so",
-          "libvgpu.so"
+          "libGLX_indirect.so"
         ]
       }
     }

@@ -32,7 +32,7 @@ push:
 	docker push registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
 #	go build -o ./cmd/nvml/nvml ./cmd/nvml
 #
-#	docker run --name=cen --rm -it -v /usr/:/usr/local/gpu/host/ -v /etc/gpu-manager/vdriver:/etc/gpu-manager/vdriver registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 /usr/bin/copy-bin-lib
+#	docker run --name=cen --rm -it -v /usr/:/usr/local/vgpu/host/ -v /etc/gpu-manager/vdriver:/etc/gpu-manager/vdriver registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 /usr/bin/copy-bin-lib
 #
 #	docker run --privileged --name=cen --rm -it -v `pwd`:/data -v /etc/gpu-manager/vdriver/nvidia/:/usr/local/nvidia/ -e LD_LIBRARY_PATH=/usr/local/nvidia/lib64/  registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 /data/cmd/nvml/nvml
 #	docker run --privileged --name=cen --rm -it -v `pwd`:/data -v /etc/gpu-manager/vdriver/nvidia/:/etc/gpu-manager/vdriver/nvidia/ -e LD_LIBRARY_PATH=/etc/gpu-manager/vdriver/nvidia/lib64  registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5 /usr/bin/nvml

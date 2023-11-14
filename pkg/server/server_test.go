@@ -261,7 +261,7 @@ GPU5     SOC     SOC     SOC     SOC     PIX      X
 		for i := range pod.Spec.Containers {
 			pod.Annotations[types.PredicateGPUIndexPrefix+strconv.Itoa(i)] = "0"
 		}
-		pod, _ = k8sClient.CoreV1().Pods("test-ns").Create(pod)
+		pod, _ = k8sClient.CoreV1().Pods("test-ns").Create(context.Background(), pod, metav1.CreateOptions{})
 
 		// wait for podLister to sync
 		time.Sleep(time.Second * 2)

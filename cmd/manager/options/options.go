@@ -46,6 +46,7 @@ type Options struct {
 	HostnameOverride         string // vm
 	VirtualManagerPath       string // /etc/gpu-manager/vm
 	DevicePluginPath         string // /var/lib/kubelet/device-plugins
+	VolumeConfigPath         string // /etc/gpu-manager/extra-config.json
 	EnableShare              bool
 	AllocationCheckPeriod    int    // 30
 	CheckpointPath           string // /etc/gpu-manager/checkpoint
@@ -76,6 +77,7 @@ func NewOptions() *Options {
 func (opt *Options) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&opt.Driver, "driver", opt.Driver, "The driver name for manager")
 	fs.StringVar(&opt.ExtraPath, "extra-config", opt.ExtraPath, "The extra config file location")
+	fs.StringVar(&opt.VolumeConfigPath, "volume-config", opt.VolumeConfigPath, "The volume config file location")
 	fs.IntVar(&opt.QueryPort, "query-port", opt.QueryPort, "port for query statistics information")
 	fs.StringVar(&opt.QueryAddr, "query-addr", opt.QueryAddr, "address for query statistics information")
 	fs.StringVar(&opt.KubeConfigFile, "kubeconfig", opt.KubeConfigFile, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")

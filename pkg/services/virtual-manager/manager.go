@@ -134,9 +134,9 @@ import (
 import "C"
 
 const (
-	PIDS_CONFIG_NAME       = "pids.config"
-	CONTROLLER_CONFIG_NAME = "vcuda.config"
-	DEFAULT_DIR_MODE       = 0777
+	PidsConfigName       = "pids.config"
+	ControllerConfigName = "vcuda.config"
+	DefaultDirMode       = 0777
 )
 
 // VirtualManager manages vGPUs
@@ -186,7 +186,7 @@ func (vm *VirtualManager) Run() {
 		klog.Fatalf("Please set virtual manager path")
 	}
 	// /etc/gpu-manager/vm
-	if err := os.MkdirAll(vm.cfg.VirtualManagerPath, DEFAULT_DIR_MODE); err != nil && !os.IsNotExist(err) {
+	if err := os.MkdirAll(vm.cfg.VirtualManagerPath, DefaultDirMode); err != nil && !os.IsNotExist(err) {
 		klog.Fatalf("can't create %s, error %s", vm.cfg.VirtualManagerPath, err)
 	}
 
@@ -335,7 +335,7 @@ func (vm *VirtualManager) garbageCollector() {
 func (vm *VirtualManager) process() {
 	vcudaConfigFunc := func(podUID string) error {
 		dirName := filepath.Clean(filepath.Join(vm.cfg.VirtualManagerPath, podUID))
-		if err := os.MkdirAll(dirName, DEFAULT_DIR_MODE); err != nil && !os.IsExist(err) {
+		if err := os.MkdirAll(dirName, DefaultDirMode); err != nil && !os.IsExist(err) {
 			return err
 		}
 
@@ -378,10 +378,10 @@ func (vm *VirtualManager) registerVDeviceWithContainerId(podUID, contID string) 
 		return nil, fmt.Errorf("unable to find virtual manager controller path")
 	}
 
-	pidFilename := filepath.Join(baseDir, contID, PIDS_CONFIG_NAME)
-	configFilename := filepath.Join(baseDir, contID, CONTROLLER_CONFIG_NAME)
+	pidFilename := filepath.Join(baseDir, contID, PidsConfigName)
+	configFilename := filepath.Join(baseDir, contID, ControllerConfigName)
 
-	if err := os.MkdirAll(filepath.Dir(configFilename), DEFAULT_DIR_MODE); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(filepath.Dir(configFilename), DefaultDirMode); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 
@@ -412,10 +412,10 @@ func (vm *VirtualManager) registerVDeviceWithContainerName(podUID, contName stri
 		return nil, fmt.Errorf("unable to find virtual manager controller path")
 	}
 
-	pidFilename := filepath.Join(baseDir, contName, PIDS_CONFIG_NAME)
-	configFilename := filepath.Join(baseDir, contName, CONTROLLER_CONFIG_NAME)
+	pidFilename := filepath.Join(baseDir, contName, PidsConfigName)
+	configFilename := filepath.Join(baseDir, contName, ControllerConfigName)
 
-	if err := os.MkdirAll(filepath.Dir(configFilename), DEFAULT_DIR_MODE); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(filepath.Dir(configFilename), DefaultDirMode); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 
@@ -599,7 +599,7 @@ func runVDeviceServer(dir string, handler vcudaapi.VCUDAServiceServer) *grpc.Ser
 		return nil
 	}
 
-	if err := os.Chmod(socketFile, DEFAULT_DIR_MODE); err != nil {
+	if err := os.Chmod(socketFile, DefaultDirMode); err != nil {
 		klog.Errorf("chmod %s failed, %v", socketFile, err)
 		return nil
 	}

@@ -73,8 +73,8 @@ type Volume struct {
 // VolumeMap stores Volume for each type
 type VolumeMap map[string]*Volume
 
-// Run starts a VolumeManager
-func (vm *VolumeManager) Run() (err error) {
+// Init starts a VolumeManager
+func (vm *VolumeManager) Init() (err error) {
 	file, err := os.ReadFile(types.FILE)
 	if err != nil {
 		klog.Fatalln(err)
@@ -92,7 +92,6 @@ func (vm *VolumeManager) Run() (err error) {
 }
 
 func (vm *VolumeManager) Copy() error {
-
 	vols := make(VolumeMap)
 	for _, cfg := range vm.Config {
 		vol := &Volume{
@@ -106,26 +105,26 @@ func (vm *VolumeManager) Copy() error {
 					return err
 				}
 
-				klog.Infof("Find binaries: %+v", bins)
+				klog.Infof("Find %s binaries: %+v", cfg.Name, bins)
 
 				vol.dirs = append(vol.dirs, volumeDir{binDir, bins})
 			case "libraries":
 				var libs32 []string
 				var libs64 []string
-				filepath.WalkDir(filepath.Join(types.NvDir, "lib"), func(path string, d fs.DirEntry, err error) error {
-					if path != filepath.Join(types.NvDir, "lib") {
+				filepath.WalkDir(filepath.Join(types.DriverDir, cfg.Name, "lib"), func(path string, d fs.DirEntry, err error) error {
+					if path != filepath.Join(types.DriverDir, cfg.Name, "lib") {
 						libs32 = append(libs32, path)
 					}
 					return nil
 				})
-				filepath.WalkDir(filepath.Join(types.NvDir, "lib64"), func(path string, d fs.DirEntry, err error) error {
-					if path != filepath.Join(types.NvDir, "lib64") {
+				filepath.WalkDir(filepath.Join(types.DriverDir, cfg.Name, "lib64"), func(path string, d fs.DirEntry, err error) error {
+					if path != filepath.Join(types.DriverDir, cfg.Name, "lib64") {
 						libs64 = append(libs64, path)
 					}
 					return nil
 				})
-				klog.V(2).Infof("Find 32bit libraries: %+v", libs32)
-				klog.V(2).Infof("Find 64bit libraries: %+v", libs64)
+				klog.Infof("Find %s 32bit libraries: %+v", cfg.Name, libs32)
+				klog.Infof("Find %s 64bit libraries: %+v", cfg.Name, libs64)
 
 				vol.dirs = append(vol.dirs, volumeDir{lib32Dir, libs32}, volumeDir{lib64Dir, libs64})
 			}
@@ -133,104 +132,51 @@ func (vm *VolumeManager) Copy() error {
 			vols[cfg.Name] = vol
 		}
 	}
-
-	if err := vm.mirror(vols); err != nil {
-		return err
+	for _, vol := range vols {
+		for _, d := range vol.dirs {
+			for _, f := range d.files {
+				if strings.HasPrefix(path.Base(f), "libvgpu.so") {
+					vm.cudaControlFile = f
+				}
+				if strings.HasPrefix(path.Base(f), "libcuda.so") {
+					driverStr := strings.SplitN(strings.TrimPrefix(path.Base(f), "libcuda.so."), ".", -1)
+					if len(driverStr) > 2 {
+						types.DriverVersionMajor, _ = strconv.Atoi(driverStr[0])
+						types.DriverVersionMinor, _ = strconv.Atoi(driverStr[1])
+						klog.Infof("Driver version: %d.%d", types.DriverVersionMajor, types.DriverVersionMinor)
+					}
+				}
+			}
+		}
 	}
+
+	klog.Infoln("Share", vm.Share)
 
 	klog.V(2).Infof("Volume manager is running")
 	return nil
 }
 
 // #lizard forgives
-func (vm *VolumeManager) mirror(vols VolumeMap) error {
-	for _, vol := range vols {
-		if exist, _ := vol.exist(); !exist {
-			if err := os.MkdirAll(vol.Path, 0755); err != nil {
-				return err
-			}
-		}
 
-		for _, d := range vol.dirs {
-			vpath := path.Join(vol.Path, d.name)
-			if err := os.MkdirAll(vpath, 0755); err != nil {
-				return err
-			}
-
-			for _, f := range d.files {
-				klog.V(2).Infof("Mirror %s to %s", f, vpath)
-				if strings.HasPrefix(path.Base(f), "libvgpu.so") {
-					vm.cudaControlFile = f
-				}
-			}
-			for _, f := range d.files {
-				if strings.HasPrefix(path.Base(f), "libcuda.so.") {
-					driverStr := strings.SplitN(strings.TrimPrefix(path.Base(f), "libcuda.so."), ".", -1)
-					if len(driverStr) < 2 {
-						continue
-					}
-					types.DriverVersionMajor, _ = strconv.Atoi(driverStr[0])
-					types.DriverVersionMinor, _ = strconv.Atoi(driverStr[1])
-					klog.Infof("Driver version: %d.%d", types.DriverVersionMajor, types.DriverVersionMinor)
-					break
-				}
-			}
-		}
-	}
-
-	vCudaFileFn := func(soFile string) error {
-		os.Chmod(vm.cudaControlFile, os.ModePerm)
-		l := filepath.Join(filepath.Dir(vm.cudaControlFile), soFile)
-		os.Remove(l)
-		GenLink(filepath.Base(vm.cudaControlFile), soFile, filepath.Dir(vm.cudaControlFile))
-		klog.Infof("Vcuda %s to %s", vm.cudaControlFile, l)
-		return nil
-	}
-	klog.Infoln("cudaControlFile ", vm.cudaControlFile)
-	klog.Infoln("Share ", vm.Share)
-	klog.Infoln("CudaSoname ", vm.CudaSoname)
-	if vm.Share && len(vm.cudaControlFile) > 0 {
-		if len(vm.CudaSoname) > 0 {
-			for _, f := range vm.CudaSoname {
-				if err := vCudaFileFn(f); err != nil {
-					klog.Errorln(err)
-					return err
-				}
-			}
-		}
-
-		if len(vm.MlSoName) > 0 {
-			for _, f := range vm.MlSoName {
-				if err := vCudaFileFn(f); err != nil {
-					klog.Errorln(err)
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (v *Volume) exist() (bool, error) {
-	_, err := os.Stat(v.Path)
+func exist(Path string) (bool, error) {
+	_, err := os.Stat(Path)
 	if os.IsNotExist(err) {
 		return false, nil
 	}
-
 	return true, err
 }
 
-func (v *Volume) remove() error {
-	return os.RemoveAll(v.Path)
-}
 func GenLink(source, target, pwd string) {
+	os.Remove(filepath.Join(pwd, target))
 	klog.Infoln("gen link", source, "->", target)
+	//err := os.Symlink(filepath.Join(pwd, source), filepath.Join(pwd, target))
+	//if err != nil {
+	//	klog.Fatalln(err)
+	//}
 	cmd := exec.Command("ln", "-s", source, target) // 你可以替换成你想要执行的命令和参数
 	cmd.Dir = pwd
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	klog.Infoln(source, target, pwd, out.String())
 	err := cmd.Run()
 	if err != nil {
 		klog.Fatalln(err, out.String())

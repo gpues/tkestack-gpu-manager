@@ -22,26 +22,10 @@ RUN go build -o /tmp/nvml ./cmd/nvml
 COPY ./build/* /tmp
 RUN mv /tmp/jq-linux-$(arch | sed s/aarch64/arm64/ | sed s/x86_64/amd64/) /tmp/jq && chmod +x /tmp/jq
 COPY build/libvgpu.so /tmp/
-RUN chmod 777 /tmp/libvgpu.so && chown root:root /tmp/libvgpu.so
 
 #FROM registry.cn-hangzhou.aliyuncs.com/acejilam/centos-cuda:7.11.08
 FROM registry.cn-hangzhou.aliyuncs.com/acejilam/centos:7
 
-# kubelet
-VOLUME ["/var/lib/kubelet/device-plugins"]
-
-# gpu manager storage
-VOLUME ["/etc/gpu-manager/vm"]
-
-# /usr:/usr/local/gpu/host
-# 容器(/usr/local/gpu拷贝到/usr/local/nvidia) -> 宿主机(/etc/gpu-manager/vdriver:/usr/local/nvidia)
-VOLUME ["/etc/gpu-manager/vdriver"]
-
-# /etc/gpu-manager/log:/var/log/gpu-manager
-VOLUME ["/var/log/gpu-manager"]
-
-# nvidia library search location
-VOLUME ["/usr/local/gpu/"]
 
 #RUN echo "/usr/local/nvidia/lib" > /etc/ld.so.conf.d/nvidia.conf && \
 #    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
@@ -56,16 +40,15 @@ VOLUME ["/sys/fs/cgroup"]
 EXPOSE 5678
 
 COPY build/start.sh /
-COPY build/copy-bin-lib.sh /
-
 
 COPY build/volume.json /etc/gpu-manager/
 COPY build/extra-config.json /etc/gpu-manager/
+COPY build/ld.so.preload  /usr/local/vgpu/ld.so.preload
+COPY build/libvgpu.so /usr/local/vgpu/libvgpu.so
 
 COPY --from=build /tmp/gpu-manager /usr/bin/
 COPY --from=build /tmp/gpu-client /usr/bin/
 COPY --from=build /tmp/copy-bin-lib /usr/bin/
 COPY --from=build /tmp/jq /usr/bin/jq
-COPY --from=build /tmp/libvgpu.so /usr/local/gpu/
 COPY --from=build /tmp/nvml /usr/bin/nvml
 CMD ["/start.sh"]

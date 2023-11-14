@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"io"
 	"k8s.io/klog"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"tkestack.io/gpu-manager/pkg/server"
 	"tkestack.io/gpu-manager/pkg/types"
@@ -31,84 +31,101 @@ func ReadReallyFile(filePath string) string {
 }
 
 func main() {
-	_ = os.RemoveAll(types.NvDir)
-	_ = os.MkdirAll(types.NvDir, os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(types.NvDir, "lib"), os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(types.NvDir, "lib64"), os.ModeDir)
-	_ = os.MkdirAll(filepath.Join(types.NvDir, "bin"), os.ModeDir)
-	copyFileWithModeAndOwnership(types.ControlLib, filepath.Join(types.NvDir, "lib64", filepath.Base(types.ControlLib)))
 
 	vs := server.VolumeManager{}
-	vs.Run()
-	vs.Copy()
-
+	vs.Init()
+	copyBinFileMap := map[string]string{}
+	copyFileMap := map[string][2]string{}
+	copyLinkMap := map[string][2]string{}
 	for _, v := range vs.Config {
+		os.RemoveAll(filepath.Join(types.DriverDir, v.Name))
+		_ = os.MkdirAll(filepath.Join(types.DriverDir, v.Name, "lib"), os.ModeDir)
+		_ = os.MkdirAll(filepath.Join(types.DriverDir, v.Name, "lib64"), os.ModeDir)
+		_ = os.MkdirAll(filepath.Join(types.DriverDir, v.Name, "bin"), os.ModeDir)
+
 		if v.Name != "nvidia" {
 			continue
 		}
+		copyFileMap[types.ControlLib] = [2]string{v.Name, filepath.Base(types.ControlLib)}
 		for _, lib := range v.Components["libraries"] {
 			reallyFiles := SearchFile(types.FindBase, lib+"*", "stubs")
 			for linkFile, reallyFile := range reallyFiles {
 				if linkFile != reallyFile {
 					continue
 				}
-				arch := GetArchFromPath(reallyFile)
-				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(filepath.Join(types.NvDir, "lib")+arch, filepath.Base(linkFile)))
-				if err != nil {
-					klog.Fatalln(err)
-				}
+				copyFileMap[reallyFile] = [2]string{v.Name, filepath.Base(linkFile)}
 			}
 			for linkFile, reallyFile := range reallyFiles { // 链接文件
 				if linkFile == reallyFile {
 					continue
 				}
-				arch := GetArchFromPath(reallyFile)
-				//reallyPath := filepath.Join(filepath.Join(NvDir, "lib")+arch, filepath.Base(reallyFile))
-				targetLinkPath := filepath.Join(filepath.Join(types.NvDir, "lib")+arch, filepath.Base(linkFile))
-				_ = os.Remove(targetLinkPath)
-				server.GenLink(filepath.Base(reallyFile), filepath.Base(linkFile), filepath.Join(types.NvDir, "lib")+arch)
+				copyLinkMap[linkFile] = [2]string{v.Name, reallyFile}
 			}
 		}
 		for _, bin := range v.Components["binaries"] {
 			reallyFiles := SearchFile(types.FindBase, bin, "")
 			for linkFile, reallyFile := range reallyFiles {
-				err := copyFileWithModeAndOwnership(reallyFile, filepath.Join(types.NvDir, "bin", filepath.Base(linkFile)))
-				if err != nil {
-					klog.Fatalln(err)
-				}
+				copyBinFileMap[reallyFile] = filepath.Join(types.DriverDir, v.Name, "bin", filepath.Base(linkFile))
 			}
 		}
 	}
+	for s, d := range copyBinFileMap {
+		err := copyFileWithModeAndOwnership(s, d)
+		if err != nil {
+			klog.Fatalln(err)
+		}
+	}
+	for reallyFile, ds := range copyFileMap {
+		arch := GetArchFromPath(reallyFile)
+		d := filepath.Join(filepath.Join(types.DriverDir, ds[0], "lib")+arch, ds[1])
+		err := copyFileWithModeAndOwnership(reallyFile, d)
+		if err != nil {
+			klog.Fatalln(err)
+		}
+	}
+	for linkFile, ds := range copyLinkMap {
+		reallyFile := ds[1]
+		arch := GetArchFromPath(reallyFile)
+		server.GenLink(filepath.Base(reallyFile), filepath.Base(linkFile), filepath.Join(types.DriverDir, ds[0], "lib")+arch)
+	}
+	vs.Copy()
 
-	vs.Run()
 }
+
+var fileMap = map[string]bool{}
+var walkOnce sync.Once
 
 func SearchFile(root string, searchPattern string, skipPattern string) map[string]string {
 	reallyFiles := map[string]string{}
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			filePath := path
-			// 检查文件名是否符合规则
-			if match, _ := filepath.Match(searchPattern, info.Name()); match {
-				if skipPattern != "" && strings.Contains(filePath, skipPattern) {
+	walkOnce.Do(func() {
+		filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				if skipPattern != "" && strings.Contains(path, skipPattern) {
 					return nil
 				}
-				if strings.Contains(filePath, ".so") {
-					reallyFiles[filePath] = ReadReallyFile(filePath)
-				} else {
-					reallyFiles[filePath] = filePath
-				}
+				fileMap[path] = true
+			}
+			return nil
+		})
+	})
+
+	for filePath, _ := range fileMap {
+		// 检查文件名是否符合规则
+		if match, _ := filepath.Match(searchPattern, filepath.Base(filePath)); match {
+			if skipPattern != "" && strings.Contains(filePath, skipPattern) {
+				return nil
+			}
+			if strings.Contains(filePath, ".so") {
+				reallyFiles[filePath] = ReadReallyFile(filePath)
+			} else {
+				reallyFiles[filePath] = filePath
 			}
 		}
-		return nil
-	})
-	if err != nil {
-		log.Println("Error:", err)
 	}
+
 	return reallyFiles
 }
 

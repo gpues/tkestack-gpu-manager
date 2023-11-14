@@ -711,7 +711,7 @@ GPU5     SOC     SOC     SOC     SOC     PIX      X
 	}
 }
 
-func createAndAllocate(alloc *NvidiaTopoAllocator, client kubernetes.Interface, raw podRawInfo) (*pluginapi.AllocateResponse, error) {
+func createAndAllocate(alloc *TopoAllocator, client kubernetes.Interface, raw podRawInfo) (*pluginapi.AllocateResponse, error) {
 	var pod *v1.Pod
 	pod, _ = client.CoreV1().Pods("test-ns").Get(raw.Name, metav1.GetOptions{})
 	if pod == nil {
@@ -847,7 +847,7 @@ func prepareContainerAllocateRequest(cores int, memory int) (req pluginapi.Conta
 	return req
 }
 
-func initAllocator(tree *nvidia.NvidiaTree, client kubernetes.Interface) *NvidiaTopoAllocator {
+func initAllocator(tree *nvidia.NvidiaTree, client kubernetes.Interface) *TopoAllocator {
 	cfg := &config.Config{
 		EnableShare:           true,
 		VCudaRequestsQueue:    make(chan *types.VCudaRequest, 10),
@@ -860,5 +860,5 @@ func initAllocator(tree *nvidia.NvidiaTree, client kubernetes.Interface) *Nvidia
 	}(cfg)
 
 	alloc := NewNvidiaTopoAllocatorForTest(cfg, tree, client, response.NewFakeResponseManager())
-	return alloc.(*NvidiaTopoAllocator)
+	return alloc.(*TopoAllocator)
 }

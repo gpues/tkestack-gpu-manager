@@ -124,7 +124,7 @@ const (
 
 const (
 	FILE       = "/etc/gpu-manager/volume.json"
-	NvDir      = "/etc/gpu-manager/vdriver/nvidia"
-	FindBase   = "/usr/local/gpu/"
-	ControlLib = "/usr/local/gpu/libvgpu.so"
+	DriverDir  = "/etc/gpu-manager/vdriver"
+	FindBase   = "/usr/local/host/"
+	ControlLib = "/usr/local/vgpu/host/libvgpu.so"
 )

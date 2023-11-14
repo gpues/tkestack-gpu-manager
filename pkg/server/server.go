@@ -306,7 +306,6 @@ func (m *managerImpl) Version(ctx context.Context, req *google_protobuf1.Empty) 
 func (m *managerImpl) RegisterToKubelet() error {
 	socketFile := filepath.Join(m.config.DevicePluginPath, types.KubeletSocket)
 	dialOptions := []grpc.DialOption{grpc.WithInsecure(), grpc.WithDialer(utils.UnixDial), grpc.WithBlock(), grpc.WithTimeout(time.Second * 5)}
-
 	conn, err := grpc.Dial(socketFile, dialOptions...)
 	if err != nil {
 		return err

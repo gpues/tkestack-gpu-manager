@@ -39,19 +39,23 @@ func init() {
 	allocator.Register("dummy", NewDummyAllocator)
 }
 
-// DummyAllocator is a struct{}
-type DummyAllocator struct {
+type Allocator struct {
 }
 
-var _ allocator.GPUTopoService = &DummyAllocator{}
+func (ta *Allocator) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+	p := new(pluginapi.PreferredAllocationResponse)
+	return p, nil
+}
+
+var _ allocator.GPUTopoService = &Allocator{}
 
 // NewDummyAllocator returns a new DummyAllocator
 func NewDummyAllocator(_ *config.Config, _ device.GPUTree, _ kubernetes.Interface, _ response.Manager) allocator.GPUTopoService {
-	return &DummyAllocator{}
+	return &Allocator{}
 }
 
 // Allocate returns /dev/fuse for dummy device
-func (ta *DummyAllocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
+func (ta *Allocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	resps := &pluginapi.AllocateResponse{}
 	for range reqs.ContainerRequests {
 		resps.ContainerResponses = append(resps.ContainerResponses, &pluginapi.ContainerAllocateResponse{
@@ -70,12 +74,12 @@ func (ta *DummyAllocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRe
 }
 
 // ListAndWatch not implement
-func (ta *DummyAllocator) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (ta *Allocator) ListAndWatch(e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 	return fmt.Errorf("not implement")
 }
 
 // ListAndWatchWithResourceName sends dummy device back to server
-func (ta *DummyAllocator) ListAndWatchWithResourceName(resourceName string, e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
+func (ta *Allocator) ListAndWatchWithResourceName(resourceName string, e *pluginapi.Empty, s pluginapi.DevicePlugin_ListAndWatchServer) error {
 	devs := []*pluginapi.Device{
 		{
 			ID:     fmt.Sprintf("dummy-%s-0", resourceName),
@@ -96,11 +100,11 @@ func (ta *DummyAllocator) ListAndWatchWithResourceName(resourceName string, e *p
 }
 
 // GetDevicePluginOptions returns empty DevicePluginOptions
-func (ta *DummyAllocator) GetDevicePluginOptions(ctx context.Context, e *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
+func (ta *Allocator) GetDevicePluginOptions(ctx context.Context, e *pluginapi.Empty) (*pluginapi.DevicePluginOptions, error) {
 	return &pluginapi.DevicePluginOptions{}, nil
 }
 
 // PreStartContainer returns empty PreStartContainerResponse
-func (ta *DummyAllocator) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
+func (ta *Allocator) PreStartContainer(ctx context.Context, req *pluginapi.PreStartContainerRequest) (*pluginapi.PreStartContainerResponse, error) {
 	return &pluginapi.PreStartContainerResponse{}, nil
 }

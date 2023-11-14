@@ -39,6 +39,11 @@ type vcoreResourceServer struct {
 	resourceServerImpl
 }
 
+func (vr *vcoreResourceServer) GetPreferredAllocation(ctx context.Context, request *pluginapi.PreferredAllocationRequest) (*pluginapi.PreferredAllocationResponse, error) {
+	p := new(pluginapi.PreferredAllocationResponse)
+	return p, nil
+}
+
 var _ pluginapi.DevicePluginServer = &vcoreResourceServer{}
 var _ ResourceServer = &vcoreResourceServer{}
 

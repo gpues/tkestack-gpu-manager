@@ -41,6 +41,18 @@ type PodCache struct {
 	podInformer informerCore.PodInformer
 }
 
+func (p PodCache) OnAdd(obj interface{}, isInInitialList bool) {
+	return
+}
+
+func (p PodCache) OnUpdate(oldObj, newObj interface{}) {
+	return
+}
+
+func (p PodCache) OnDelete(obj interface{}) {
+	return
+}
+
 var (
 	podCache *PodCache
 )
@@ -79,15 +91,6 @@ func NewPodCacheForTest(client kubernetes.Interface) {
 	}
 	klog.V(2).Infof("Pod cache is running")
 }
-
-// OnAdd is a callback function for podInformer, do nothing for now.
-func (p *PodCache) OnAdd(obj interface{}) {}
-
-// OnUpdate is a callback function for podInformer, do nothing for now.
-func (p *PodCache) OnUpdate(oldObj, newObj interface{}) {}
-
-// OnDelete is a callback function for podInformer, do nothing for now.
-func (p *PodCache) OnDelete(obj interface{}) {}
 
 func GetPod(namespace, name string) (*v1.Pod, error) {
 	pod, err := podCache.podInformer.Lister().Pods(namespace).Get(name)

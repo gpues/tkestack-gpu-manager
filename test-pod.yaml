@@ -7,13 +7,13 @@ metadata:
 spec:
   containers:
     - name: c
-      image: ccr.ccs.tencentyun.com/menghe/tensorflow-gputest:0.2
+      image: centos:7
       resources:
         requests:
-          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-core: "100" # 0.5张卡
           tencent.com/vcuda-memory: "20"
         limits:
-          tencent.com/vcuda-core: "50" # 0.5张卡
+          tencent.com/vcuda-core: "100" # 0.5张卡
           tencent.com/vcuda-memory: "20"
       command:
         - "/bin/bash"

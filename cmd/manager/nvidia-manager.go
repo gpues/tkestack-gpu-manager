@@ -34,6 +34,16 @@ import (
 )
 
 func main() {
+	//os.Args = append(os.Args, []string{
+	//	"--v=4",
+	//	"--hostname-override=vm",
+	//	"--share-mode=true",
+	//	"--kubeconfig=/root/.kube/config",
+	//	"--extra-config=/etc/gpu-manager/extra-config.json",
+	//	"--log-dir=/var/log/gpu-manager",
+	//	"--container-runtime-endpoint=/var/run/cri-dockerd.sock",
+	//	"--device-plugin-path=/var/lib/kubelet/device-plugins",
+	//}...)
 	klog.InitFlags(nil)
 	opt := options.NewOptions()
 	opt.AddFlags(pflag.CommandLine)

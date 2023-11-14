@@ -18,26 +18,14 @@ spec:
       priorityClassName: "system-node-critical"
       # only run node has gpu device
       hostPID: true
-      initContainers:
-        - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
-          imagePullPolicy: Always
-          name: copy-bin-lib
-          command:
-            - "/usr/bin/copy-bin-lib"
-          volumeMounts:
-            - name: usr-directory
-              mountPath: /usr/local/gpu/host
-              readOnly: true
-            - name: vdriver
-              mountPath: /etc/gpu-manager/vdriver
       containers:
         - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
           imagePullPolicy: Always
           name: gpu-manager
-#          command:
-#            - "/bin/sh"
-#            - "-c"
-#            - "sleep 1d"
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "sleep 1d"
           securityContext:
             privileged: true
           ports:
@@ -59,8 +47,10 @@ spec:
               mountPath: /sys/fs/cgroup
               readOnly: true
             - name: usr-directory
-              mountPath: /usr/local/gpu/host
+              mountPath: /usr/local/host
               readOnly: true
+            - name: vgpu
+              mountPath: /usr/local/vgpu/host
           env:
             - name: LOG_LEVEL
               value: "4"
@@ -107,3 +97,7 @@ spec:
           hostPath:
             type: Directory
             path: /usr
+        - name: vgpu
+          hostPath:
+            type: DirectoryOrCreate
+            path: /usr/local/vgpu
