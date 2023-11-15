@@ -365,6 +365,7 @@ func (vm *VirtualManager) registerVDeviceWithContainerId(podUID, contID string) 
 
 	containerInfo, err := vm.containerRuntimeManager.InspectContainer(contID)
 	if err != nil {
+		klog.Errorln(err)
 		return nil, fmt.Errorf("can't find %s from docker", contID)
 	}
 
@@ -375,23 +376,28 @@ func (vm *VirtualManager) registerVDeviceWithContainerId(podUID, contID string) 
 
 	baseDir := utils.GetVirtualControllerMountPath(resp)
 	if baseDir == "" {
-		return nil, fmt.Errorf("unable to find virtual manager controller path")
+		err := fmt.Errorf("unable to find virtual manager controller path")
+		klog.Errorln(err)
+		return nil, err
 	}
 
 	pidFilename := filepath.Join(baseDir, contID, PidsConfigName)
 	configFilename := filepath.Join(baseDir, contID, ControllerConfigName)
 
 	if err := os.MkdirAll(filepath.Dir(configFilename), DefaultDirMode); err != nil && !os.IsExist(err) {
+		klog.Errorln(err)
 		return nil, err
 	}
 
 	// write down pid file
 	err = vm.writePidFile(pidFilename, contID)
 	if err != nil {
+		klog.Errorln(err)
 		return nil, err
 	}
 
 	if err := vm.writeConfigFile(configFilename, podUID, containerInfo.Metadata.Name); err != nil {
+		klog.Errorln(err)
 		return nil, err
 	}
 

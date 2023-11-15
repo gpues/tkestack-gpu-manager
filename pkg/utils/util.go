@@ -337,7 +337,7 @@ func GetContainerIndexByName(pod *v1.Pod, containerName string) (int, error) {
 
 func GetVirtualControllerMountPath(resp *pluginapi.ContainerAllocateResponse) string {
 	for _, mnt := range resp.Mounts {
-		if mnt.ContainerPath == types.VCUDA_MOUNTPOINT {
+		if mnt.ContainerPath == types.VcudaMountPoint {
 			return mnt.HostPath
 		}
 	}

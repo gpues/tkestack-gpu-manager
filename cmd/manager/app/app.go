@@ -76,13 +76,12 @@ func Run(opt *options.Options) error {
 			}
 		}
 	}
+	vs := server.VolumeManager{}
+	_ = vs.Init()
 
 	srv := server.NewManager(cfg)
 	go srv.Run()
 	time.Sleep(time.Second * 3)
-
-	vs := server.VolumeManager{}
-	_ = vs.Init()
 
 	if err := srv.RegisterToKubelet(); err != nil {
 		return err

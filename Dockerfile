@@ -26,15 +26,8 @@ COPY build/libvgpu.so /tmp/
 #FROM registry.cn-hangzhou.aliyuncs.com/acejilam/centos-cuda:7.11.08
 FROM registry.cn-hangzhou.aliyuncs.com/acejilam/centos:7
 
-
-#RUN echo "/usr/local/nvidia/lib" > /etc/ld.so.conf.d/nvidia.conf && \
-#    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
 RUN echo "/etc/gpu-manager/vdriver/nvidia/lib" > /etc/ld.so.conf.d/nvidia.conf && \
     echo "/etc/gpu-manager/vdriver/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
-
-# cgroup
-VOLUME ["/sys/fs/cgroup"]
 
 # display
 EXPOSE 5678
@@ -43,8 +36,7 @@ COPY build/start.sh /
 
 COPY build/volume.json /etc/gpu-manager/
 COPY build/extra-config.json /etc/gpu-manager/
-COPY build/ld.so.preload  /usr/local/vgpu/ld.so.preload
-COPY build/libvgpu.so /usr/local/vgpu/libvgpu.so
+COPY build/libvgpu.so /etc/gpu-manager/libvgpu.so
 
 COPY --from=build /tmp/gpu-manager /usr/bin/
 COPY --from=build /tmp/gpu-client /usr/bin/

@@ -2,14 +2,12 @@ package main
 
 import (
 	"bytes"
-	"io"
 	"k8s.io/klog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"tkestack.io/gpu-manager/pkg/server"
 	"tkestack.io/gpu-manager/pkg/types"
 )
@@ -46,7 +44,6 @@ func main() {
 		if v.Name != "nvidia" {
 			continue
 		}
-		copyFileMap[types.ControlLib] = [2]string{v.Name, filepath.Base(types.ControlLib)}
 		for _, lib := range v.Components["libraries"] {
 			reallyFiles := SearchFile(types.FindBase, lib+"*", "stubs")
 			for linkFile, reallyFile := range reallyFiles {
@@ -70,7 +67,7 @@ func main() {
 		}
 	}
 	for s, d := range copyBinFileMap {
-		err := copyFileWithModeAndOwnership(s, d)
+		err := server.CopyFileWithModeAndOwnership(s, d)
 		if err != nil {
 			klog.Fatalln(err)
 		}
@@ -78,7 +75,7 @@ func main() {
 	for reallyFile, ds := range copyFileMap {
 		arch := GetArchFromPath(reallyFile)
 		d := filepath.Join(filepath.Join(types.DriverDir, ds[0], "lib")+arch, ds[1])
-		err := copyFileWithModeAndOwnership(reallyFile, d)
+		err := server.CopyFileWithModeAndOwnership(reallyFile, d)
 		if err != nil {
 			klog.Fatalln(err)
 		}
@@ -146,43 +143,4 @@ func GetArchFromPath(libPath string) string {
 		return "64"
 	}
 	return ""
-}
-
-func copyFileWithModeAndOwnership(src, dst string) error {
-	klog.Infof("copy file from %s -> %s", src, dst)
-	source, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-	os.ReadFile(dst)
-	destination, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return err
-	}
-
-	sourceInfo, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-
-	err = os.Chmod(dst, sourceInfo.Mode())
-	if err != nil {
-		return err
-	}
-
-	if stat, ok := sourceInfo.Sys().(*syscall.Stat_t); ok {
-		err = os.Chown(dst, int(stat.Uid), int(stat.Gid))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }

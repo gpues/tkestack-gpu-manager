@@ -31,7 +31,7 @@ const (
 	GPUAssigned             = "tencent.com/gpu-assigned"
 	ClusterNameAnnotation   = "clusterName"
 
-	VCUDA_MOUNTPOINT = "/etc/vcuda"
+	VcudaMountPoint = "/etc/vcuda"
 
 	/** 256MB */
 	MemoryBlockSize = 268435456
@@ -119,12 +119,14 @@ const (
 	PodNamespaceLabelKey  = "io.kubernetes.pod.namespace"
 	PodNameLabelKey       = "io.kubernetes.pod.name"
 	PodUIDLabelKey        = "io.kubernetes.pod.uid"
-	PodCgroupNamePrefix   = "kubepods"
+	PodCgroupNamePrefix   = "pod"
 )
 
 const (
-	FILE       = "/etc/gpu-manager/volume.json"
-	DriverDir  = "/etc/gpu-manager/vdriver"
-	FindBase   = "/usr/local/host/"
-	ControlLib = "/usr/local/vgpu/host/libvgpu.so"
+	VGpuFILE     = "/etc/gpu-manager/libvgpu.so"
+	VGpuHostFILE = "/etc/gpu-manager/cuda/libvgpu.so"
+	FILE         = "/etc/gpu-manager/volume.json"
+	DriverDir    = "/etc/gpu-manager/vdriver"
+	FindBase     = "/usr/local/host/"
+	VGpuPath     = "/usr/local/vgpu/"
 )

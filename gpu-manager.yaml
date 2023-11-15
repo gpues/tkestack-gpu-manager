@@ -22,10 +22,10 @@ spec:
         - image: registry.cn-hangzhou.aliyuncs.com/acejilam/tkestack-gpu-manager:v1.1.5
           imagePullPolicy: Always
           name: gpu-manager
-          command:
-            - "/bin/sh"
-            - "-c"
-            - "sleep 1d"
+#          command:
+#            - "/bin/sh"
+#            - "-c"
+#            - "sleep 1d"
           securityContext:
             privileged: true
           ports:
@@ -49,13 +49,13 @@ spec:
             - name: usr-directory
               mountPath: /usr/local/host
               readOnly: true
-            - name: vgpu
-              mountPath: /usr/local/vgpu/host
+            - name: cuda
+              mountPath: /etc/gpu-manager/cuda
           env:
             - name: LOG_LEVEL
               value: "4"
             - name: EXTRA_FLAGS
-              value: "--container-runtime-endpoint=/var/run/cri-dockerd.sock --device-plugin-path=/var/lib/kubelet/device-plugins"
+              value: "--container-runtime-endpoint=/var/run/cri-dockerd.sock --cgroup-driver=systemd --device-plugin-path=/var/lib/kubelet/device-plugins"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
@@ -77,6 +77,10 @@ spec:
           hostPath:
             type: DirectoryOrCreate
             path: /etc/gpu-manager/log
+        - name: cuda
+          hostPath:
+            type: DirectoryOrCreate
+            path: /etc/gpu-manager/cuda
         - name: checkpoint
           hostPath:
             type: DirectoryOrCreate
@@ -97,7 +101,3 @@ spec:
           hostPath:
             type: Directory
             path: /usr
-        - name: vgpu
-          hostPath:
-            type: DirectoryOrCreate
-            path: /usr/local/vgpu

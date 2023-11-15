@@ -359,7 +359,6 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 	)
 
 	predicateMissed = !utils.IsGPUPredicatedPod(pod)
-	singleNodeMemory := int64(ta.tree.Leaves()[0].Meta.TotalMemory)
 	for _, v := range req.DevicesIDs {
 		if strings.HasPrefix(v, types.VCoreAnnotation) {
 			needCores++
@@ -375,7 +374,6 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 
 	needMemory := needMemoryBlocks * types.MemoryBlockSize
 	ta.tree.Update()
-	shareMode := false
 
 	podCache := ta.allocatedPod.GetCache(string(pod.UID))
 	containerCache := &cache.Info{}
@@ -424,17 +422,12 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 			}
 
 			// evaluate in share mode
-			shareMode = true
 			eval, ok := ta.evaluators["share"]
 			if !ok {
 				return nil, fmt.Errorf("can not find evaluator share")
 			}
 			nodes = eval.Evaluate(needCores, needMemory)
 			if len(nodes) == 0 {
-				if shareMode && needMemory > singleNodeMemory {
-					return nil, fmt.Errorf("request memory %d is larger than %d", needMemory, singleNodeMemory)
-				}
-
 				return nil, fmt.Errorf("no free node")
 			}
 
@@ -472,10 +465,6 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 	}
 
 	if len(nodes) == 0 {
-		if shareMode && needMemory > singleNodeMemory {
-			return nil, fmt.Errorf("request memory %d is larger than %d", needMemory, singleNodeMemory)
-		}
-
 		return nil, fmt.Errorf("no free node")
 	}
 
@@ -563,49 +552,32 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 	}
 
 	// LD_LIBRARY_PATH
-	ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/vgpu:/usr/local/nvidia/lib64"
+	ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/nvidia/lib64"
 	for _, env := range container.Env {
 		if env.Name == "compat32" && strings.ToLower(env.Value) == "true" {
-			ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/vgpu:/usr/local/nvidia/lib"
+			ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/nvidia/lib"
 		}
 	}
 
 	// NVIDIA_VISIBLE_DEVICES
 	ctntResp.Envs["NVIDIA_VISIBLE_DEVICES"] = strings.Join(deviceList, ",")
+	ctntResp.Envs["LD_PRELOAD"] = types.VGpuHostFILE
 
-	if shareMode {
-		ctntResp.Mounts = append(ctntResp.Mounts, &pluginapi.Mount{
-			ContainerPath: "/usr/local/nvidia",
-			HostPath:      types.DriverLibraryPath, // /etc/gpu-manager/vdriver + nvidia
-			ReadOnly:      true,
-		})
-	} else {
-		ctntResp.Mounts = append(ctntResp.Mounts, &pluginapi.Mount{
-			ContainerPath: "/usr/local/nvidia",
-			HostPath:      types.DriverOriginLibraryPath,
-			ReadOnly:      true,
-		})
-	}
+	ctntResp.Mounts = append(ctntResp.Mounts, &pluginapi.Mount{
+		ContainerPath: "/usr/local/nvidia",
+		HostPath:      types.DriverLibraryPath, // /etc/gpu-manager/vdriver + nvidia
+		ReadOnly:      true,
+	})
 
 	ctntResp.Mounts = append(ctntResp.Mounts,
 		&pluginapi.Mount{
-			ContainerPath: types.VCUDA_MOUNTPOINT,
+			ContainerPath: types.VcudaMountPoint,
 			HostPath:      filepath.Join(ta.config.VirtualManagerPath, string(pod.UID)),
 			ReadOnly:      true,
 		},
 		&pluginapi.Mount{
-			ContainerPath: "/usr/local/vgpu/libvgpu.so",
-			HostPath:      "/usr/local/vgpu/libvgpu.so",
-			ReadOnly:      true,
-		},
-		&pluginapi.Mount{
-			ContainerPath: "/usr/local/vgpu/libvgpu.so.1",
-			HostPath:      "/usr/local/vgpu/libvgpu.so.1",
-			ReadOnly:      true,
-		},
-		&pluginapi.Mount{
-			ContainerPath: "/etc/ld.so.preload",
-			HostPath:      "/usr/local/vgpu/ld.so.preload",
+			ContainerPath: types.VGpuHostFILE,
+			HostPath:      types.VGpuHostFILE,
 			ReadOnly:      true,
 		},
 	)

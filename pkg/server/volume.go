@@ -20,6 +20,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -27,6 +28,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"tkestack.io/gpu-manager/pkg/services/volume"
 	"tkestack.io/gpu-manager/pkg/types"
 
@@ -151,7 +153,7 @@ func (vm *VolumeManager) Copy() error {
 	}
 
 	klog.Infoln("Share", vm.Share)
-
+	CopyFileWithModeAndOwnership(types.VGpuFILE, types.VGpuHostFILE)
 	klog.V(2).Infof("Volume manager is running")
 	return nil
 }
@@ -181,4 +183,42 @@ func GenLink(source, target, pwd string) {
 	if err != nil {
 		klog.Fatalln(err, out.String())
 	}
+}
+func CopyFileWithModeAndOwnership(src, dst string) error {
+	klog.Infof("copy file from %s -> %s", src, dst)
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+	os.ReadFile(dst)
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return err
+	}
+
+	sourceInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	err = os.Chmod(dst, sourceInfo.Mode())
+	if err != nil {
+		return err
+	}
+
+	if stat, ok := sourceInfo.Sys().(*syscall.Stat_t); ok {
+		err = os.Chown(dst, int(stat.Uid), int(stat.Gid))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
