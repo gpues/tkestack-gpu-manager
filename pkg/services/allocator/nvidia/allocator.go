@@ -563,10 +563,10 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 	}
 
 	// LD_LIBRARY_PATH
-	ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/nvidia/lib64"
+	ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/vgpu:/usr/local/nvidia/lib64"
 	for _, env := range container.Env {
 		if env.Name == "compat32" && strings.ToLower(env.Value) == "true" {
-			ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/nvidia/lib"
+			ctntResp.Envs["LD_LIBRARY_PATH"] = "/usr/local/vgpu:/usr/local/nvidia/lib"
 		}
 	}
 
@@ -596,6 +596,11 @@ func (ta *TopoAllocator) allocateOne(pod *v1.Pod, container *v1.Container, req *
 		&pluginapi.Mount{
 			ContainerPath: "/usr/local/vgpu/libvgpu.so",
 			HostPath:      "/usr/local/vgpu/libvgpu.so",
+			ReadOnly:      true,
+		},
+		&pluginapi.Mount{
+			ContainerPath: "/usr/local/vgpu/libvgpu.so.1",
+			HostPath:      "/usr/local/vgpu/libvgpu.so.1",
 			ReadOnly:      true,
 		},
 		&pluginapi.Mount{
@@ -674,8 +679,6 @@ func (ta *TopoAllocator) freeGPU(podUids []string) {
 	ta.writeCheckpoint()
 }
 
-// #lizard forgives
-// Allocate tries to allocate GPU node for each request
 func (ta *TopoAllocator) Allocate(_ context.Context, reqs *pluginapi.AllocateRequest) (*pluginapi.AllocateResponse, error) {
 	ta.Lock()
 	defer ta.Unlock()
@@ -1151,7 +1154,7 @@ func vDeviceAnnotationStr(nodes []*nvtree.NvidiaNode) string {
 }
 
 func getCandidatePods(client kubernetes.Interface, hostname string) ([]*v1.Pod, error) {
-	candidatePods := []*v1.Pod{}
+	var candidatePods []*v1.Pod
 	allPods, err := getPodsOnNode(client, hostname, string(v1.PodPending))
 	if err != nil {
 		return candidatePods, err
@@ -1216,7 +1219,6 @@ func getPodsOnNode(client kubernetes.Interface, hostname string, phase string) (
 	return pods, nil
 }
 
-// make the pod ordered by predicate time
 func OrderPodsdByPredicateTime(pods []*v1.Pod) []*v1.Pod {
 	newPodList := make(PodsOrderedByPredicateTime, 0, len(pods))
 	for _, v := range pods {

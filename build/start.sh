@@ -6,6 +6,7 @@ set -o nounset
 
 cp /usr/local/vgpu/libvgpu.so /usr/local/vgpu/host/libvgpu.so
 cp /usr/local/vgpu/ld.so.preload /usr/local/vgpu/host/ld.so.preload
+cd /usr/local/vgpu/host && ln -s libvgpu.so libcuda.so.1
 
 /usr/bin/copy-bin-lib
 
