@@ -118,6 +118,7 @@ func readProcsFile(file string) ([]int, error) {
 }
 
 func (m *containerRuntimeManager) getCGroupName(pod *v1.Pod, containerID string) (cGroupPath string, err error) {
+	defer klog.Infoln(cGroupPath)
 	podQos := pod.Status.QOSClass
 	if len(podQos) == 0 {
 		podQos = qos.GetPodQOS(pod)
