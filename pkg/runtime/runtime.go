@@ -67,7 +67,7 @@ func (m *containerRuntimeManager) GetPidsInContainers(containerID string) ([]int
 		return nil, err
 	}
 
-	cgroupPath, err := m.getCgroupName(pod, containerID)
+	cgroupPath, err := m.getCGroupName(pod, containerID)
 	if err != nil {
 		klog.Errorf("can't get cgroup parent, %v", err)
 		return nil, err
@@ -117,34 +117,36 @@ func readProcsFile(file string) ([]int, error) {
 	return pids, nil
 }
 
-func (m *containerRuntimeManager) getCgroupName(pod *v1.Pod, containerID string) (string, error) {
-
+func (m *containerRuntimeManager) getCGroupName(pod *v1.Pod, containerID string) (cGroupPath string, err error) {
 	podQos := pod.Status.QOSClass
 	if len(podQos) == 0 {
 		podQos = qos.GetPodQOS(pod)
 	}
-
+	PodCGroupNamePrefix := "kubepods-pod"
 	var parentContainer cgroup.CgroupName
 	switch podQos {
 	case v1.PodQOSGuaranteed:
 		parentContainer = cgroup.NewCgroupName(containerRoot)
 	case v1.PodQOSBurstable:
 		parentContainer = cgroup.NewCgroupName(containerRoot, fmt.Sprintf("kubepods-%s.slice", strings.ToLower(string(v1.PodQOSBurstable))))
+		PodCGroupNamePrefix = fmt.Sprintf("kubepods-%s-pod", strings.ToLower(string(v1.PodQOSBurstable)))
 	case v1.PodQOSBestEffort:
 		parentContainer = cgroup.NewCgroupName(containerRoot, fmt.Sprintf("kubepods-%s.slice", strings.ToLower(string(v1.PodQOSBestEffort))))
+		PodCGroupNamePrefix = fmt.Sprintf("kubepods-%s-pod", strings.ToLower(string(v1.PodQOSBestEffort)))
 	}
-	podContainer := fmt.Sprintf("%s-%s-pod%s.slice", types.PodCgroupNamePrefix, strings.ToLower(string(v1.PodQOSBestEffort)), strings.Replace(string(pod.UID), "-", "_", -1))
-	cgroupName := cgroup.NewCgroupName(parentContainer, podContainer)
+
+	podContainer := PodCGroupNamePrefix + string(pod.UID)
+	cGroupName := cgroup.NewCgroupName(parentContainer, podContainer)
 
 	switch m.cgroupDriver {
 	case "systemd":
-		return fmt.Sprintf("%s/%s-%s.scope", cgroupName.ToSystemd(), cgroup.SystemdPathPrefixOfRuntime(m.runtimeName), containerID), nil
+		cGroupPath = fmt.Sprintf("%s/%s-%s.scope", cGroupName.ToSystemd(), "docker", containerID)
 	case "cgroupfs":
-		return fmt.Sprintf("%s/docker-%s.scope", cgroupName.ToCgroupfs(), containerID), nil
+		cGroupPath = fmt.Sprintf("%s/%s", cGroupName.ToCgroupfs(), containerID)
 	default:
+		err = fmt.Errorf("unsupported cgroup driver")
 	}
-
-	return "", fmt.Errorf("unsupported cgroup driver")
+	return
 }
 
 func (m *containerRuntimeManager) RuntimeName() string { return m.runtimeName }
