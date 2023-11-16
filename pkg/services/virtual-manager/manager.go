@@ -17,8 +17,10 @@
 
 package vitrual_manager
 
+import "C"
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -28,8 +30,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-	"unsafe"
-
 	vcudaapi "tkestack.io/gpu-manager/pkg/api/runtime/vcuda"
 	"tkestack.io/gpu-manager/pkg/config"
 	"tkestack.io/gpu-manager/pkg/device/nvidia"
@@ -43,95 +43,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog"
 )
-
-//#include <stdint.h>
-//#include <sys/types.h>
-//#include <sys/stat.h>
-//#include <fcntl.h>
-//#include <string.h>
-//#include <sys/file.h>
-//#include <time.h>
-//#include <stdlib.h>
-//#include <unistd.h>
-//
-//#ifndef NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE
-//#define NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE 16
-//#endif
-//
-//#ifndef FILENAME_MAX
-//#define FILENAME_MAX 4096
-//#endif
-//
-//struct version_t {
-//  int major;
-//  int minor;
-//} __attribute__((packed, aligned(8)));
-//
-//struct resource_data_t {
-//  char pod_uid[48];
-//  int limit;
-//  char occupied[4044];
-//  char container_name[FILENAME_MAX];
-//  char bus_id[NVML_DEVICE_PCI_BUS_ID_BUFFER_SIZE];
-//  uint64_t gpu_memory;
-//  int utilization;
-//  int hard_limit;
-//  struct version_t driver_version;
-//  int enable;
-//} __attribute__((packed, aligned(8)));
-//
-//int setting_to_disk(const char* filename, struct resource_data_t* data) {
-//  int fd = 0;
-//  int wsize = 0;
-//  int ret = 0;
-//
-//  fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, 00777);
-//  if (fd == -1) {
-//    return 1;
-//  }
-//
-//  wsize = (int)write(fd, (void*)data, sizeof(struct resource_data_t));
-//  if (wsize != sizeof(struct resource_data_t)) {
-//    ret = 2;
-//	goto DONE;
-//  }
-//
-//DONE:
-//  close(fd);
-//
-//  return ret;
-//}
-//
-//int pids_to_disk(const char* filename, int* data, int size) {
-//  int fd = 0;
-//  int wsize = 0;
-//  struct timespec wait = {
-//	.tv_sec = 0, .tv_nsec = 100 * 1000 * 1000,
-//  };
-//  int ret = 0;
-//
-//  fd = open(filename, O_CREAT | O_TRUNC | O_WRONLY, 00777);
-//  if (fd == -1) {
-//    return 1;
-//  }
-//
-//  while (flock(fd, LOCK_EX)) {
-//    nanosleep(&wait, NULL);
-//  }
-//
-//  wsize = (int)write(fd, (void*)data, sizeof(int) * size);
-//  if (wsize != sizeof(int) * size) {
-//	ret = 2;
-//    goto DONE;
-//  }
-//
-//DONE:
-//  flock(fd, LOCK_UN);
-//  close(fd);
-//
-//  return ret;
-//}
-import "C"
 
 const (
 	PidsConfigName       = "pids.config"
@@ -467,8 +378,6 @@ func (vm *VirtualManager) registerVDeviceWithContainerName(podUID, contName stri
 
 func (vm *VirtualManager) writePidFile(filename string, contID string) error {
 	klog.V(2).Infof("Write %s", filename)
-	cFileName := C.CString(filename)
-	defer C.free(unsafe.Pointer(cFileName))
 
 	pidsInContainer, err := vm.containerRuntimeManager.GetPidsInContainers(contID)
 	if err != nil {
@@ -477,13 +386,13 @@ func (vm *VirtualManager) writePidFile(filename string, contID string) error {
 	if len(pidsInContainer) == 0 {
 		return fmt.Errorf("empty pids")
 	}
-	pids := make([]C.int, len(pidsInContainer))
+	var pids []int
 
 	for i := range pidsInContainer {
-		pids[i] = C.int(pidsInContainer[i])
+		pids = append(pids, pidsInContainer[i])
 	}
-
-	if C.pids_to_disk(cFileName, &pids[0], (C.int)(len(pids))) != 0 {
+	marshal, _ := json.Marshal(pids)
+	if err := os.WriteFile(filename, marshal, os.ModePerm); err != nil {
 		return fmt.Errorf("can't sink pids file")
 	}
 
@@ -530,51 +439,40 @@ func (vm *VirtualManager) writeConfigFile(filename string, podUID, name string) 
 				memory := (&memoryLimit).Value() * types.MemoryBlockSize
 
 				if err := func() error {
-					var vcudaConfig C.struct_resource_data_t
-
-					cPodUID := C.CString(podUID)
-					cContName := C.CString(name)
-					cFileName := C.CString(filename)
-
-					defer C.free(unsafe.Pointer(cPodUID))
-					defer C.free(unsafe.Pointer(cContName))
-					defer C.free(unsafe.Pointer(cFileName))
-
-					C.strcpy(&vcudaConfig.pod_uid[0], (*C.char)(unsafe.Pointer(cPodUID)))
-					C.strcpy(&vcudaConfig.container_name[0], (*C.char)(unsafe.Pointer(cContName)))
-					vcudaConfig.gpu_memory = C.uint64_t(memory)
-					vcudaConfig.utilization = C.int(cores)
-					vcudaConfig.hard_limit = 1
-					vcudaConfig.driver_version.major = C.int(types.DriverVersionMajor)
-					vcudaConfig.driver_version.minor = C.int(types.DriverVersionMinor)
-
+					vcudaConfig := resourceData{
+						PodUid:        podUID,
+						ContainerName: name,
+						GpuMemory:     memory,
+						Utilization:   cores,
+						HardLimit:     1,
+						DriverVersion: driverVersion{
+							Major: types.DriverVersionMajor,
+							Minor: types.DriverVersionMinor,
+						},
+					}
 					if cores >= nvidia.HundredCore {
-						vcudaConfig.enable = 0
+						vcudaConfig.Enable = 0
 					} else {
-						vcudaConfig.enable = 1
+						vcudaConfig.Enable = 1
 					}
-
 					if hasLimitCore {
-						vcudaConfig.hard_limit = 0
-						vcudaConfig.limit = C.int(limitCores)
+						vcudaConfig.HardLimit = 0
+						vcudaConfig.Limit = limitCores
 					}
-
-					if C.setting_to_disk(cFileName, &vcudaConfig) != 0 {
+					marshal, _ := json.Marshal(vcudaConfig)
+					if err := os.WriteFile(filename, marshal, os.ModePerm); err != nil {
 						return fmt.Errorf("can't sink config %s", filename)
 					}
-
 					return nil
 				}(); err != nil {
 					return err
 				}
 			}
 		}
-
 		if !found {
 			return fmt.Errorf("can't locate %s(%s)", podUID, name)
 		}
 	}
-
 	return nil
 }
 
@@ -632,4 +530,21 @@ func runVDeviceServer(dir string, handler vcudaapi.VCUDAServiceServer) *grpc.Ser
 	}
 
 	return srv
+}
+
+type resourceData struct {
+	PodUid        string        `json:"pod_uid"`
+	Occupied      string        `json:"occupied"`
+	ContainerName string        `json:"container_name"`
+	BusId         string        `json:"bus_id"`
+	Limit         int           `json:"limit"`
+	GpuMemory     int64         `json:"gpu_memory"`
+	Utilization   int64         `json:"utilization"`
+	HardLimit     int           `json:"hard_limit"`
+	Enable        int           `json:"enable"`
+	DriverVersion driverVersion `json:"driver_version"`
+}
+type driverVersion struct {
+	Major int `json:"major"`
+	Minor int `json:"minor"`
 }
